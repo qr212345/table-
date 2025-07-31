@@ -4,8 +4,8 @@ let isAdmin = false;
 let tableData = {}; // { table1: {x, y, players: []}, ... }
 
 function toggleAdminMode() {
-  const input = document.getElementById("adminPass");
-  if (input.value === ADMIN_PASSWORD) {
+  const input = document.getElementById("adminPass").value;
+  if (input === ADMIN_PASSWORD) {
     isAdmin = !isAdmin;
     document.getElementById("saveBtn").style.display = isAdmin ? "inline" : "none";
     enableDraggable(isAdmin);
@@ -58,10 +58,15 @@ async function saveLayout() {
 }
 
 async function loadLayout() {
-  const res = await fetch(GAS_URL);
-  const data = await res.json();
-  tableData = data;
-  renderTables();
+  try {
+    const res = await fetch(GAS_URL);
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data = await res.json();
+    tableData = data;
+    renderTables();
+  } catch (e) {
+    console.error("座席データ読み込み失敗:", e);
+  }
 }
 
 function renderTables() {
@@ -80,8 +85,6 @@ function renderTables() {
   }
   enableDraggable(isAdmin);
 }
-
-loadLayout();
 
 function autoReloadLayout(intervalMs = 30000) {
   setInterval(() => {
