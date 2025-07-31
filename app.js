@@ -16,6 +16,13 @@ function toggleAdminMode() {
   }
 }
 
+const sidebar = document.getElementById('sidebar');
+const toggleBtn = document.getElementById('sidebarToggleBtn');
+
+toggleBtn.addEventListener('click', () => {
+  sidebar.classList.toggle('open');
+});
+
 // ドラッグ機能
 function enableDraggable(enable) {
   document.querySelectorAll(".table-box").forEach(el => {
