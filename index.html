@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>座席表示</title>
+<script type="module" src="./app.js"></script>
+</head>
+<style>
+  #layoutArea {
+    position: relative;
+    width: 100%;
+    height: 500px;
+    border: 1px solid #ccc;
+    background: #f0f0f0;
+  }
+
+  .table-box {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: gray;
+    color: white;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+  }
+
+  .occupied {
+    background: red;
+  }
+
+  .draggable {
+    cursor: move;
+  }
+
+  #adminControls {
+    margin: 10px 0;
+  }
+</style>
+<body>
+<div id="adminControls">
+  <input type="password" id="adminPass" placeholder="管理パスワード">
+  <button onclick="toggleAdminMode()">管理者モード切替</button>
+  <button onclick="saveLayout()" style="display:none;" id="saveBtn">配置を保存</button>
+</div>
+
+<div id="layoutArea"></div>
+</body>
+</html>
