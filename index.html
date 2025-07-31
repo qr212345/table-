@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>座席表示</title>
 <script type="module" src="./app.js"></script>
-</head>
 <style>
   #layoutArea {
     position: relative;
@@ -37,17 +36,92 @@
     cursor: move;
   }
 
-  #adminControls {
-    margin: 10px 0;
+  /* サイドバー関連 */
+
+  #sidebar {
+    position: fixed;
+    top: 0;
+    left: -260px; /* 初期は画面外 */
+    width: 260px;
+    height: 100vh;
+    background: #222;
+    color: white;
+    padding: 1rem;
+    box-sizing: border-box;
+    transition: left 0.3s ease;
+    z-index: 1000;
+    font-family: sans-serif;
+  }
+  #sidebar.open {
+    left: 0;
+  }
+
+  #sidebar input[type="password"] {
+    width: 100%;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+  }
+
+  #sidebar button {
+    width: 100%;
+    padding: 0.6rem;
+    margin-bottom: 0.5rem;
+    background: #007bff;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+
+  /* サイドバー開閉ボタン */
+
+  #sidebarToggleBtn {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 1100;
+    background: #007bff;
+    border: none;
+    color: white;
+    font-size: 24px;
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    cursor: pointer;
   }
 </style>
+</head>
 <body>
-<div id="adminControls">
-  <input type="password" id="adminPass" placeholder="管理パスワード">
-  <button onclick="toggleAdminMode()">管理者モード切替</button>
+
+<!-- サイドバー開閉ボタン -->
+<button id="sidebarToggleBtn">≡</button>
+
+<!-- サイドバー -->
+<div id="sidebar">
+  <h3>管理者モード</h3>
+  <input type="password" id="adminPass" placeholder="パスワードを入力" />
+  <button onclick="toggleAdminMode()">切替</button>
   <button onclick="saveLayout()" style="display:none;" id="saveBtn">配置を保存</button>
 </div>
 
+<!-- 座席表示領域 -->
 <div id="layoutArea"></div>
+
+<script>
+  const sidebar = document.getElementById('sidebar');
+  const toggleBtn = document.getElementById('sidebarToggleBtn');
+
+  toggleBtn.addEventListener('click', () => {
+    sidebar.classList.toggle('open');
+  });
+</script>
+
+<script type="module" src="./app.js"></script>
+
 </body>
 </html>
