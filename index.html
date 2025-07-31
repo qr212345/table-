@@ -11,22 +11,24 @@
 <button id="sidebarToggleBtn">≡</button>
 <!-- サイドバー -->
 <div id="sidebar">
- <h3>管理者モード</h3>
- <div>
-   <button id="showLayoutBtn">座席管理画面</button>
-   <button id="showLogBtn">ログ表示画面</button>
- </div>
- <div>
-  <input type="password" id="adminPass" placeholder="パスワードを入力" />
-  <button onclick="toggleAdminMode()">切替</button>
-  <button onclick="saveLayout()" style="display:none;" id="saveBtn">配置を保存</button>
- </div>
- <div id="adminPanel" style="display:none">
-   <button onclick="addTable()">テーブル追加</button>
-   <button onclick="deleteTable()">テーブル削除</button>
-   <button onclick="updatePlayers()">プレイヤー更新</button>
- </div>
+  <!-- ここに管理者モード関連の操作ボタンや入力欄がまとまっています -->
+  <h3>管理者モード</h3>
+  <div>
+    <button id="showLayoutBtn">座席管理画面</button>
+    <button id="showLogBtn">ログ表示画面</button>
+  </div>
+  <div>
+    <input type="password" id="adminPass" placeholder="パスワードを入力" />
+    <button onclick="toggleAdminMode()">切替</button>
+    <button onclick="saveLayout()" style="display:none;" id="saveBtn">配置を保存</button>
+  </div>
+  <div id="adminPanel" style="display:none">
+    <button onclick="addTable()">テーブル追加</button>
+    <button onclick="deleteTable()">テーブル削除</button>
+    <button onclick="updatePlayers()">プレイヤー更新</button>
+  </div>
 </div>
+
 <!-- 座席表示領域 -->
 <div id="layoutArea"></div>
 <div id="logArea" style="display:none;">
