@@ -1,4 +1,4 @@
-const GAS_URL = "https://script.google.com/macros/s/【URL】/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzvQs-eSz2v_ndBTKg-S2ZPJhDe7G0GGro7PZfKLpptjDqasHQuznAaWtVKIbbeXvI/exec";
 const ADMIN_PASSWORD = "secret123";
 let isAdmin = false;
 let tableData = {}; // { table1: {x, y, players: []}, ... }
