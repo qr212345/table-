@@ -1,5 +1,5 @@
-const GAS_URL = "https://script.google.com/macros/s/AKfycbx_GbN4Uhr34gUpIuE20KgA8DkvQH6m-pGk9SoUBBEYqVIxau1ybt81-zUai2xUOvs/exec";
-const ADMIN_PASSWORD = "secret123";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbw2_yakmWmv0v9liJSv8HaGnvCuLC7ByGMXid4i0cYrd35jny46d8KPDCih8hVpxsw/exec";
+const ADMIN_PASSWORD = "babanuki123";
 
 let isAdmin = false;
 let tableData = {}; // { table1: {x, y, players: []}, ... }
