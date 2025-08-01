@@ -1,5 +1,6 @@
 const GAS_URL = "https://script.google.com/macros/s/AKfycbx_GbN4Uhr34gUpIuE20KgA8DkvQH6m-pGk9SoUBBEYqVIxau1ybt81-zUai2xUOvs/exec";
 const ADMIN_PASSWORD = "secret123";
+
 let isAdmin = false;
 let tableData = {}; // { table1: {x, y, players: []}, ... }
 
@@ -8,7 +9,7 @@ function toggleAdminMode() {
   const input = document.getElementById("adminPass").value;
   if (input === ADMIN_PASSWORD) {
     isAdmin = !isAdmin;
-    document.getElementById("saveBtn").style.display = isAdmin ? "inline" : "none";
+    document.getElementById("saveBtn").style.display = isAdmin ? "inline-block" : "none";
     document.getElementById("adminPanel").style.display = isAdmin ? "block" : "none";
     enableDraggable(isAdmin);
   } else {
@@ -42,13 +43,18 @@ function dragEnd(e) {
   const el = e.target;
   const x = e.clientX - offsetX;
   const y = e.clientY - offsetY;
-  el.style.left = `${x}px`;
-  el.style.top = `${y}px`;
+
+  // 座席領域内に収める制限（必要なら調整）
+  const container = document.getElementById("layoutArea");
+  const maxX = container.clientWidth - el.offsetWidth;
+  const maxY = container.clientHeight - el.offsetHeight;
+  el.style.left = `${Math.min(Math.max(0, x), maxX)}px`;
+  el.style.top = `${Math.min(Math.max(0, y), maxY)}px`;
 
   const id = el.dataset.id;
   if (tableData[id]) {
-    tableData[id].x = x;
-    tableData[id].y = y;
+    tableData[id].x = parseInt(el.style.left, 10);
+    tableData[id].y = parseInt(el.style.top, 10);
   }
 }
 
@@ -61,7 +67,8 @@ async function saveLayout() {
       body: JSON.stringify({ mode: "save", layoutData: Object.values(tableData), operator: "admin" })
     });
     alert("配置を保存しました");
-  } catch {
+  } catch (e) {
+    console.error(e);
     alert("保存に失敗しました");
   }
 }
@@ -72,10 +79,11 @@ async function loadLayout() {
     const res = await fetch(GAS_URL);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const data = await res.json();
+
     tableData = {};
     if (data.tables) {
       data.tables.forEach(t => {
-        tableData[t.tableID] = { x: t.x, y: t.y, players: t.playerIds };
+        tableData[t.tableID] = { x: t.x, y: t.y, players: t.playerIds || [] };
       });
     }
     renderTables();
@@ -93,27 +101,22 @@ function renderTables() {
     const el = document.createElement("div");
     el.className = "table-box";
     el.textContent = id.replace("table", "");
+    el.style.position = "absolute";
     el.style.left = `${info.x}px`;
     el.style.top = `${info.y}px`;
     el.dataset.id = id;
-    if ((info.players || []).length > 0) el.classList.add("occupied");
+
+    // プレイヤーがいれば赤色に occupied クラス付与、いなければ灰色
+    if ((info.players || []).length > 0) {
+      el.classList.add("occupied");
+    }
+
     container.appendChild(el);
   }
   enableDraggable(isAdmin);
 }
 
-// ログ読み込み（例。GAS側でlogsを返すAPIが必要）
-async function loadLog() {
-  try {
-    const res = await fetch(GAS_URL + "?mode=logs");
-    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-    const data = await res.json();
-    const logViewer = document.getElementById("logViewer");
-    logViewer.innerHTML = data.logs.map(log => `<div>${log.date} - ${log.operator} - ${log.action}</div>`).join("");
-  } catch (e) {
-    console.error("ログ読み込み失敗:", e);
-  }
-}
+// ログ読み込みは別途作れば呼び出し可能
 
 // サイドバー内の画面切替ボタン制御
 function setupScreenToggle() {
@@ -124,7 +127,7 @@ function setupScreenToggle() {
   document.getElementById("showLogBtn").addEventListener("click", () => {
     document.getElementById("layoutArea").style.display = "none";
     document.getElementById("logArea").style.display = "block";
-    loadLog();
+    // ここでログ読み込み関数呼び出し可
   });
 }
 
@@ -159,6 +162,6 @@ window.onload = () => {
   document.getElementById("layoutArea").style.display = "block";
   document.getElementById("logArea").style.display = "none";
 
-  // サイドバー初期位置（閉じてる状態にしたい場合は -250px）
+  // サイドバー初期位置を左に隠す
   document.getElementById("sidebar").style.left = "-250px";
 };
