@@ -16,7 +16,7 @@ function toggleAdminMode() {
   }
 }
 
-// ドラッグ有効化・無効化
+// ドラッグの有効化・無効化
 function enableDraggable(enable) {
   document.querySelectorAll(".table-box").forEach(el => {
     el.draggable = enable;
@@ -58,7 +58,7 @@ async function saveLayout() {
     await fetch(GAS_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode: "save", layoutData: tableData, operator: "admin" })
+      body: JSON.stringify({ mode: "save", layoutData: Object.values(tableData), operator: "admin" })
     });
     alert("配置を保存しました");
   } catch {
@@ -72,9 +72,6 @@ async function loadLayout() {
     const res = await fetch(GAS_URL);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const data = await res.json();
-    // GAS側が { tables: [...], ... } 形式なら変換する
-    // ここはGASレスポンスに合わせて調整してください
-    // 例：配列→オブジェクト形式に変換
     tableData = {};
     if (data.tables) {
       data.tables.forEach(t => {
@@ -105,10 +102,10 @@ function renderTables() {
   enableDraggable(isAdmin);
 }
 
-// ログ表示読み込み（適宜作成してください）
+// ログ読み込み（例。GAS側でlogsを返すAPIが必要）
 async function loadLog() {
   try {
-    const res = await fetch(GAS_URL + "?mode=logs"); // 例URL
+    const res = await fetch(GAS_URL + "?mode=logs");
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const data = await res.json();
     const logViewer = document.getElementById("logViewer");
@@ -118,16 +115,7 @@ async function loadLog() {
   }
 }
 
-// 自動リロード（管理者モード中は停止）
-function autoReloadLayout(intervalMs = 30000) {
-  setInterval(() => {
-    if (isAdmin) return;
-    console.log("⏳ 自動読み込み...");
-    loadLayout();
-  }, intervalMs);
-}
-
-// 画面切替イベント登録
+// サイドバー内の画面切替ボタン制御
 function setupScreenToggle() {
   document.getElementById("showLayoutBtn").addEventListener("click", () => {
     document.getElementById("layoutArea").style.display = "block";
@@ -140,13 +128,37 @@ function setupScreenToggle() {
   });
 }
 
-// 初期処理
+// サイドバーの開閉制御
+function setupSidebarToggle() {
+  const sidebar = document.getElementById("sidebar");
+  const toggleBtn = document.getElementById("sidebarToggleBtn");
+  toggleBtn.addEventListener("click", () => {
+    if (sidebar.style.left === "0px" || sidebar.style.left === "") {
+      sidebar.style.left = "-250px";
+    } else {
+      sidebar.style.left = "0px";
+    }
+  });
+}
+
+// 自動リロード（管理者モード中はスキップ）
+function autoReloadLayout(intervalMs = 30000) {
+  setInterval(() => {
+    if (isAdmin) return;
+    loadLayout();
+  }, intervalMs);
+}
+
 window.onload = () => {
   setupScreenToggle();
+  setupSidebarToggle();
   loadLayout();
   autoReloadLayout();
 
-  // 初期表示は座席管理画面
+  // 初期は座席管理画面表示
   document.getElementById("layoutArea").style.display = "block";
   document.getElementById("logArea").style.display = "none";
+
+  // サイドバー初期位置（閉じてる状態にしたい場合は -250px）
+  document.getElementById("sidebar").style.left = "-250px";
 };
