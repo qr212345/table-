@@ -1,128 +1,222 @@
-/* 全体フォント */
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  height: 100vh;
+/* 全体レイアウト */
+body, html {
+  margin: 0; padding: 0; height: 100vh;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   overflow: hidden;
-}
-
-/* サイドバー開閉ボタン */
-#sidebarToggleBtn {
-  position: fixed;
-  top: 10px;
-  left: 10px;
-  z-index: 1001;
-  width: 40px;
-  height: 40px;
-  font-size: 24px;
-  cursor: pointer;
-  background-color: #444;
-  color: white;
-  border: none;
-  border-radius: 6px;
+  background: #f0f0f0;
   user-select: none;
-  transition: background-color 0.3s ease;
-}
-
-#sidebarToggleBtn:hover {
-  background-color: #666;
 }
 
 /* サイドバー */
 #sidebar {
   position: fixed;
-  top: 0;
-  left: -220px; /* 初期は画面外に隠す */
-  width: 220px;
+  top: 0; left: 0;
+  width: 250px;
   height: 100vh;
-  background: #eee;
-  box-shadow: 2px 0 5px rgba(0,0,0,0.3);
-  padding: 10px;
+  background: #2c3e50;
+  color: white;
+  padding: 1em 1em 2em 1em;
   box-sizing: border-box;
   transition: left 0.3s ease;
+  overflow-y: auto;
   z-index: 1000;
+  display: flex;
+  flex-direction: column;
 }
 
-#sidebar.open {
-  left: 0;  /* openクラスがついたら表示 */
+/* スクロールバーを細くしておしゃれに（Chrome/Edgeなど） */
+#sidebar::-webkit-scrollbar {
+  width: 6px;
 }
-
-#sidebarToggleBtn {
-  position: fixed;
-  top: 10px;
-  left: 10px;
-  z-index: 1100;
-  background: #333;
-  color: white;
-  border: none;
-  font-size: 20px;
-  padding: 5px 10px;
-  cursor: pointer;
+#sidebar::-webkit-scrollbar-track {
+  background: #24405a;
+  border-radius: 3px;
+}
+#sidebar::-webkit-scrollbar-thumb {
+  background: #3d566e;
   border-radius: 3px;
 }
 
-/* 管理パネル（追加操作ボタン群） */
-#adminPanel button {
-  background-color: #555;
+/* タイトル */
+#sidebar h2 {
+  margin-top: 0;
+  margin-bottom: 1em;
+  font-weight: 700;
+  font-size: 1.6em;
+  text-align: center;
+  letter-spacing: 0.05em;
 }
 
-#adminPanel button:hover {
-  background-color: #777;
+/* ボタン共通 */
+#sidebar button {
+  display: block;
+  width: 100%;
+  margin: 0.5em 0;
+  padding: 0.7em 0;
+  font-size: 1.05em;
+  border: none;
+  background: #34495e;
+  color: white;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 0.25s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  font-weight: 600;
+}
+#sidebar button:hover, #sidebar button:focus {
+  background: #3d566e;
+  outline: none;
 }
 
-/* 座席表示領域とログ表示領域 */
-#layoutArea, #logArea {
-  flex-grow: 1;
-  margin-left: 0;
-  padding: 20px;
-  box-sizing: border-box;
-  overflow-y: auto;
+/* サイドバー開閉ボタン */
+.sidebar-toggle {
+  position: fixed;
+  top: 10px; left: 10px;
+  z-index: 1100;
+  background: #34495e;
+  color: white;
+  border: none;
+  font-size: 1.7em;
+  padding: 0.3em 1em;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+}
+.sidebar-toggle:hover, .sidebar-toggle:focus {
+  background: #3d566e;
+  outline: none;
+}
+
+/* メイン領域はサイドバー分を考慮して余白確保 */
+main {
+  margin-left: 250px;
   height: 100vh;
+  position: relative;
+  overflow: auto;
+  background: white;
+  box-sizing: border-box;
+  padding: 1.5em;
   transition: margin-left 0.3s ease;
 }
 
-/* サイドバーが開いているときにメインエリアを右にずらす */
-#sidebar.open ~ #layoutArea,
-#sidebar.open ~ #logArea {
-  margin-left: 250px;
+/* サイドバー隠したときのスタイル（JSで切替） */
+#sidebar.hidden {
+  left: -260px !important;
+  box-shadow: none !important;
+}
+main.sidebar-hidden {
+  margin-left: 0 !important;
 }
 
-/* ログ表示領域のタイトル */
-#logArea h3 {
-  margin-top: 0;
-  margin-bottom: 12px;
-  font-weight: bold;
+/* 座席レイアウトエリア */
+.layout-area {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #e9ecef;
+  border: 2px solid #ccc;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: inset 0 0 10px #ccc;
+  user-select: none;
 }
 
-/* ログ表示の内容 */
-#logViewer {
-  background-color: #eee;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  padding: 10px;
-  height: calc(100vh - 100px);
+/* ログエリア（今はmain内にない想定） */
+.log-area {
+  width: 100%;
+  height: 100%;
   overflow-y: auto;
-  white-space: pre-wrap;
-  font-family: Consolas, monospace;
+  background: #f9f9f9;
+  border: 2px solid #ccc;
+  border-radius: 12px;
+  padding: 1em;
+  box-sizing: border-box;
+  font-family: monospace;
   font-size: 0.9em;
-  color: #333;
+  color: #444;
 }
 
-/* レスポンシブ対応：画面幅狭い時 */
-@media (max-width: 600px) {
-  #sidebar {
-    width: 200px;
-    left: -200px;
-  }
-  #sidebar.open ~ #layoutArea,
-  #sidebar.open ~ #logArea {
-    margin-left: 200px;
-  }
-  #sidebarToggleBtn {
-    width: 36px;
-    height: 36px;
-    font-size: 20px;
-  }
+/* 座席テーブルボックス */
+.table-box {
+  width: 64px;
+  height: 64px;
+  background-color: #999999;
+  color: white;
+  font-weight: 700;
+  font-size: 1.25em;
+  text-align: center;
+  line-height: 64px;
+  border-radius: 10px;
+  position: absolute;
+  user-select: none;
+  cursor: default;
+  box-shadow: 0 0 6px rgba(0,0,0,0.25);
+  transition: background-color 0.3s, box-shadow 0.3s;
+  user-select: none;
+}
+
+/* プレイヤーがいる場合は赤色に */
+.table-box.occupied {
+  background-color: #e74c3c;
+  box-shadow: 0 0 14px #e74c3c;
+}
+
+/* 管理者モード時にドラッグ可能なテーブルはカーソルを変える */
+.table-box.draggable {
+  cursor: grab;
+  box-shadow: 0 0 8px #2980b9;
+  transition: box-shadow 0.2s;
+}
+.table-box.draggable:active {
+  cursor: grabbing;
+  box-shadow: 0 0 12px #3498db;
+}
+
+/* 管理者パネル内の入力欄とボタンの余白 */
+#adminPanel {
+  margin-top: 1em;
+  padding-top: 1em;
+  border-top: 1px solid #3d566e;
+}
+#adminPanel input[type="password"] {
+  width: 100%;
+  padding: 8px 12px;
+  margin: 0.6em 0 1em 0;
+  font-size: 1em;
+  border-radius: 6px;
+  border: none;
+  box-sizing: border-box;
+  background: #34495e;
+  color: white;
+  transition: background-color 0.3s;
+}
+#adminPanel input[type="password"]:focus {
+  outline: none;
+  background: #3d566e;
+}
+#adminPanel button {
+  margin-top: 0;
+  width: 100%;
+  padding: 0.8em 0;
+  font-size: 1.1em;
+  border: none;
+  border-radius: 8px;
+  background-color: #27ae60;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 3px 6px #1e8449;
+  transition: background-color 0.25s ease;
+}
+#adminPanel button:hover,
+#adminPanel button:focus {
+  background-color: #2ecc71;
+  outline: none;
+}
+
+/* フォーカスしやすく */
+button:focus, input:focus {
+  outline: 2px solid #3498db;
+  outline-offset: 2px;
 }
