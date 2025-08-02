@@ -4,38 +4,44 @@ const ADMIN_PASSWORD = "babanuki123";
 let isAdmin = false;
 let tableData = {}; // { table1: {x, y, players: []}, ... }
 
+////////////////////////////
 // 管理者モード切替
-// 管理者モード切り替え関数
 function toggleAdminMode() {
   const passInput = document.getElementById('adminPass');
   const inputPass = passInput.value.trim();
 
   if (inputPass === ADMIN_PASSWORD) {
+    isAdmin = !isAdmin;
+
     const controls = document.getElementById('adminControls');
-    const layoutArea = document.getElementById('layoutArea');
+    controls.style.display = isAdmin ? 'block' : 'none';
 
-    // 管理者UIの表示切替
-    const isVisible = controls.style.display === 'block';
-    const enteringAdmin = !isVisible;
-    
-    controls.style.display = isVisible ? 'none' : 'block';
-    layoutArea.classList.toggle('edit-mode',enteringAdmin);
+    if (isAdmin) {
+      renderTablesAdmin();
+      showScreen('adminView');
+    } else {
+      showScreen('seatView');
+      renderTablesView();
+    }
 
-    isAdmin = enteringAdmin;
-
-    enableDraggable(isAdmin);
-
-    console.log(!isVisible ? '🔓 編集モード ON' : '🔒 編集モード OFF');
+    console.log(isAdmin ? '🔓 編集モード ON' : '🔒 編集モード OFF');
   } else {
     alert('❌ パスワードが間違っています');
   }
 }
 window.toggleAdminMode = toggleAdminMode;
 
+////////////////////////////
+// 画面切替関数
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
 
+////////////////////////////
 // ドラッグの有効化・無効化
 function enableDraggable(enable) {
-  document.querySelectorAll(".table-box").forEach(el => {
+  document.querySelectorAll("#layoutAreaAdmin .table-box").forEach(el => {
     el.draggable = enable;
     if (enable) {
       el.classList.add("draggable");
@@ -60,8 +66,7 @@ function dragEnd(e) {
   const x = e.clientX - offsetX;
   const y = e.clientY - offsetY;
 
-  // 座席領域内に収める制限（必要なら調整）
-  const container = document.getElementById("layoutArea");
+  const container = document.getElementById("layoutAreaAdmin");
   const maxX = container.clientWidth - el.offsetWidth;
   const maxY = container.clientHeight - el.offsetHeight;
   el.style.left = `${Math.min(Math.max(0, x), maxX)}px`;
@@ -74,28 +79,28 @@ function dragEnd(e) {
   }
 }
 
+////////////////////////////
 // 配置保存
 async function saveLayout() {
   try {
     const response = await fetch(GAS_URL, {
       method: "POST",
-      mode: "cors", // CORSを許可している場合は必須
+      mode: "cors",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         mode: "save",
-        layoutData: Object.values(tableData), // tableDataがオブジェクトなら値配列にしている想定
+        layoutData: Object.values(tableData),
         operator: "admin"
       }),
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
     const result = await response.json();
 
     if (result.status === "success") {
       alert("配置を保存しました");
+      // 保存後は管理者モード画面の再描画など必要ならここで行う
     } else {
       alert("保存に失敗しました: " + (result.error || "不明なエラー"));
     }
@@ -105,6 +110,7 @@ async function saveLayout() {
   }
 }
 
+////////////////////////////
 // レイアウト読み込み
 async function loadLayout() {
   try {
@@ -118,16 +124,20 @@ async function loadLayout() {
         tableData[t.tableID] = { x: t.x, y: t.y, players: t.playerIds || [] };
       });
     }
-    renderTables();
+    // 両方の画面で表示を更新
+    renderTablesView();
+    if (isAdmin) renderTablesAdmin();
+
     console.log(`[loadLayout] 座席データ読み込み成功: テーブル数=${data.tables ? data.tables.length : 0}`);
   } catch (e) {
     console.error("[loadLayout] 座席データ読み込み失敗:", e);
   }
 }
 
-// テーブル描画
-function renderTables() {
-  const container = document.getElementById("layoutArea");
+////////////////////////////
+// 閲覧用座席表示描画（編集不可）
+function renderTablesView() {
+  const container = document.getElementById("layoutAreaView");
   container.innerHTML = "";
   for (const id in tableData) {
     const info = tableData[id];
@@ -139,45 +149,38 @@ function renderTables() {
     el.style.top = `${info.y}px`;
     el.dataset.id = id;
 
-    // プレイヤーがいれば赤色に occupied クラス付与、いなければ灰色
     if ((info.players || []).length > 0) {
       el.classList.add("occupied");
     }
-
     container.appendChild(el);
   }
-  enableDraggable(isAdmin);
 }
 
-// ログ読み込みは別途作れば呼び出し可能
+////////////////////////////
+// 管理者モード用座席表示描画（編集可能）
+function renderTablesAdmin() {
+  const container = document.getElementById("layoutAreaAdmin");
+  container.innerHTML = "";
+  for (const id in tableData) {
+    const info = tableData[id];
+    const el = document.createElement("div");
+    el.className = "table-box draggable";
+    el.textContent = id.replace("table", "");
+    el.style.position = "absolute";
+    el.style.left = `${info.x}px`;
+    el.style.top = `${info.y}px`;
+    el.dataset.id = id;
 
-// サイドバー内の画面切替ボタン制御
-function setupScreenToggle() {
-  document.getElementById("showLayoutBtn").addEventListener("click", () => {
-    document.getElementById("layoutArea").style.display = "block";
-    document.getElementById("logArea").style.display = "none";
-  });
-  document.getElementById("showLogBtn").addEventListener("click", () => {
-    document.getElementById("layoutArea").style.display = "none";
-    document.getElementById("logArea").style.display = "block";
-    // ここでログ読み込み関数呼び出し可
-  });
-}
-
-// サイドバーの開閉制御
-function setupSidebarToggle() {
-  const sidebar = document.getElementById("sidebar");
-  const toggleBtn = document.getElementById("sidebarToggleBtn");
-  toggleBtn.addEventListener("click", () => {
-    if (sidebar.style.left === "0px" || sidebar.style.left === "") {
-      sidebar.style.left = "-250px";
-    } else {
-      sidebar.style.left = "0px";
+    if ((info.players || []).length > 0) {
+      el.classList.add("occupied");
     }
-  });
+    container.appendChild(el);
+  }
+  enableDraggable(true);
 }
 
-// 自動リロード（管理者モード中はスキップ）
+////////////////////////////
+// 自動リロード（管理者モード中は停止）
 function autoReloadLayout(intervalMs = 30000) {
   setInterval(async () => {
     if (isAdmin) return;
@@ -190,22 +193,26 @@ function autoReloadLayout(intervalMs = 30000) {
   }, intervalMs);
 }
 
+////////////////////////////
+// サイドバーの開閉制御（既存コード）
+function setupSidebarToggle() {
+  const sidebar = document.getElementById("sidebar");
+  const toggleBtn = document.getElementById("sidebarToggleBtn");
+  toggleBtn.addEventListener("click", () => {
+    if (sidebar.style.left === "0px" || sidebar.style.left === "") {
+      sidebar.style.left = "-250px";
+    } else {
+      sidebar.style.left = "0px";
+    }
+  });
+}
 
+////////////////////////////
+// 初期化
 window.onload = async () => {
-  setupScreenToggle();
   setupSidebarToggle();
   await loadLayout();
   autoReloadLayout();
 
-  document.getElementById("layoutArea").style.display = "block";
-
-  document.getElementById("showLayoutBtn").addEventListener("click", () => {
-  showScreen("layoutArea");
-});
-document.getElementById("showLogBtn").addEventListener("click", () => {
-  showScreen("logArea");
-});
-
-  document.getElementById("logArea").style.display = "none";
-  document.getElementById("sidebar").style.left = "-250px";
+  // 画面切替ボタンのイベントはHTML側で設定済み（例：showSeatViewBtnなど）
 };
