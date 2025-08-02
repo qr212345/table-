@@ -5,7 +5,7 @@ let isAdmin = false;
 let tableData = {}; // { table1: {x, y, players: []}, ... }
 
 // 管理者モード切替
-function toggleAdminMode() {
+window.toggleAdminMode  = function () {
   const input = document.getElementById("adminPass").value;
   if (input === ADMIN_PASSWORD) {
     isAdmin = !isAdmin;
@@ -183,6 +183,5 @@ window.onload = async () => {
 
   document.getElementById("layoutArea").style.display = "block";
   document.getElementById("logArea").style.display = "none";
-
   document.getElementById("sidebar").style.left = "-250px";
 };
