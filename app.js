@@ -198,6 +198,14 @@ window.onload = async () => {
   autoReloadLayout();
 
   document.getElementById("layoutArea").style.display = "block";
+
+  document.getElementById("showLayoutBtn").addEventListener("click", () => {
+  showScreen("layoutArea");
+});
+document.getElementById("showLogBtn").addEventListener("click", () => {
+  showScreen("logArea");
+});
+
   document.getElementById("logArea").style.display = "none";
   document.getElementById("sidebar").style.left = "-250px";
 };
