@@ -5,17 +5,33 @@ let isAdmin = false;
 let tableData = {}; // { table1: {x, y, players: []}, ... }
 
 // 管理者モード切替
-window.toggleAdminMode  = function () {
-  const input = document.getElementById("adminPass").value;
-  if (input === ADMIN_PASSWORD) {
-    isAdmin = !isAdmin;
-    document.getElementById("saveBtn").style.display = isAdmin ? "inline-block" : "none";
-    document.getElementById("adminPanel").style.display = isAdmin ? "block" : "none";
+// 管理者モード切り替え関数
+function toggleAdminMode() {
+  const passInput = document.getElementById('adminPass');
+  const inputPass = passInput.value.trim();
+
+  if (inputPass === correctPassword) {
+    const controls = document.getElementById('adminControls');
+    const layoutArea = document.getElementById('layoutArea');
+
+    // 管理者UIの表示切替
+    const isVisible = controls.style.display === 'block';
+    const enteringAdmin = !isVisible;
+    
+    controls.style.display = isVisible ? 'none' : 'block';
+    layoutArea.classList.toggle('edit-mode',enteringAdmin);
+
+    isAdmin = enteringAdmin;
+
     enableDraggable(isAdmin);
+
+    console.log(!isVisible ? '🔓 編集モード ON' : '🔒 編集モード OFF');
   } else {
-    alert("パスワードが違います");
+    alert('❌ パスワードが間違っています');
   }
 }
+window.toggleAdminMode = toggleAdminMode;
+
 
 // ドラッグの有効化・無効化
 function enableDraggable(enable) {
