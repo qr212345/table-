@@ -10,7 +10,7 @@ function toggleAdminMode() {
   const passInput = document.getElementById('adminPass');
   const inputPass = passInput.value.trim();
 
-  if (inputPass === correctPassword) {
+  if (inputPass === ADMIN_PASSWORD) {
     const controls = document.getElementById('adminControls');
     const layoutArea = document.getElementById('layoutArea');
 
