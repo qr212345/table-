@@ -162,22 +162,26 @@ function setupSidebarToggle() {
 
 // 自動リロード（管理者モード中はスキップ）
 function autoReloadLayout(intervalMs = 30000) {
-  setInterval(() => {
+  setInterval(async () => {
     if (isAdmin) return;
-    loadLayout();
+    try {
+      await loadLayout();
+      console.log("自動リロードで座席データ更新");
+    } catch (e) {
+      console.error("自動リロードでエラー:", e);
+    }
   }, intervalMs);
 }
 
-window.onload = () => {
+
+window.onload = async () => {
   setupScreenToggle();
   setupSidebarToggle();
-  loadLayout();
+  await loadLayout();
   autoReloadLayout();
 
-  // 初期は座席管理画面表示
   document.getElementById("layoutArea").style.display = "block";
   document.getElementById("logArea").style.display = "none";
 
-  // サイドバー初期位置を左に隠す
   document.getElementById("sidebar").style.left = "-250px";
 };
