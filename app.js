@@ -61,14 +61,30 @@ function dragEnd(e) {
 // 配置保存
 async function saveLayout() {
   try {
-    await fetch(GAS_URL, {
+    const response = await fetch(GAS_URL, {
       method: "POST",
+      mode: "cors", // CORSを許可している場合は必須
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode: "save", layoutData: Object.values(tableData), operator: "admin" })
+      body: JSON.stringify({
+        mode: "save",
+        layoutData: Object.values(tableData), // tableDataがオブジェクトなら値配列にしている想定
+        operator: "admin"
+      }),
     });
-    alert("配置を保存しました");
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    if (result.status === "success") {
+      alert("配置を保存しました");
+    } else {
+      alert("保存に失敗しました: " + (result.error || "不明なエラー"));
+    }
   } catch (e) {
-    console.error(e);
+    console.error("保存処理でエラー:", e);
     alert("保存に失敗しました");
   }
 }
