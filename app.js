@@ -103,8 +103,9 @@ async function loadLayout() {
       });
     }
     renderTables();
+    console.log(`[loadLayout] 座席データ読み込み成功: テーブル数=${data.tables ? data.tables.length : 0}`);
   } catch (e) {
-    console.error("座席データ読み込み失敗:", e);
+    console.error("[loadLayout] 座席データ読み込み失敗:", e);
   }
 }
 
