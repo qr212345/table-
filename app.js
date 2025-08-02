@@ -1,4 +1,4 @@
-const GAS_URL = "https://script.google.com/macros/s/AKfycbyn0PWatlymRq6WPWwiw87tQqIGNCcOq-9z0b3fyBjVLZymvvFJcP9OLg8JJznqdNI/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzlN9qjI_5aqbXKmpCrD1MNaLG6tdT_X_QpPVF9YVu77a-SgFp9yErXOzPQfacunQ/exec";
 const ADMIN_PASSWORD = "babanuki123";
 
 let isAdmin = false;
