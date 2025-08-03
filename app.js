@@ -6,9 +6,18 @@ const layoutAreaAdmin = document.getElementById("layoutAreaAdmin");
 
 let layoutData = JSON.parse(localStorage.getItem("layoutData")) || [];
 
+// 初期座席生成
+function createInitialTables() {
+  for (let i = 1; i <= 7; i++) {
+    const id = `table${i}`;
+    const el = createElement("table", 60 * i, 60, 0, id);
+    layoutAreaAdmin.appendChild(el);
+  }
+}
+
 function createElement(type, x, y, rotation = 0, id = null) {
   const el = document.createElement("div");
-  el.classList.add("table-box", type, "draggable");
+  el.classList.add("table-box", type);
   el.style.left = x + "px";
   el.style.top = y + "px";
   el.style.transform = `rotate(${rotation}deg)`;
@@ -17,26 +26,54 @@ function createElement(type, x, y, rotation = 0, id = null) {
   el.dataset.y = y;
   el.dataset.rotation = rotation;
   el.dataset.id = id || `${type}_${Date.now()}`;
+  el.dataset.mode = "move"; // 初期状態は移動モード
 
-  if (type === "table" && Math.random() > 0.5) {
-    el.classList.add("occupied");
+  // GAS連携の人の有無に応じて occupied クラスを設定
+  if (type === "table") {
+    fetchOccupiedStatus(el.dataset.id).then(isOccupied => {
+      if (isOccupied) el.classList.add("occupied");
+    });
   }
 
+  if (isAdmin) el.classList.add("draggable");
+
   el.addEventListener("mousedown", dragStart);
-  el.addEventListener("click", e => {
-    if (isAdmin) {
+
+  // 管理者の編集モード時のクリック：回転または削除
+  el.addEventListener("click", (e) => {
+    if (!isAdmin) return;
+
+    if (el.dataset.mode === "rotate") {
       const rot = (parseInt(el.dataset.rotation) + 90) % 360;
       el.dataset.rotation = rot;
       el.style.transform = `rotate(${rot}deg)`;
+      el.dataset.mode = "resize";
+    } else if (el.dataset.mode === "resize") {
+      const isVertical = el.classList.toggle("vertical");
+      el.style.width = isVertical ? "30px" : "60px";
+      el.style.height = isVertical ? "60px" : "30px";
+      el.dataset.mode = "move";
+    } else if (el.dataset.type !== "table") {
+      // 移動状態でない pillar/door/screen は削除可能
+      layoutAreaAdmin.removeChild(el);
     }
   });
 
   return el;
 }
 
+async function fetchOccupiedStatus(id) {
+  // 仮実装：実際はGAS APIと連携する
+  // GAS側で座席IDとプレイヤーIDの状態に応じて occupied 判定
+  return false; // 今はすべて空席として処理
+}
+
 function dragStart(e) {
   if (!isAdmin) return;
   const el = e.currentTarget;
+
+  el.dataset.mode = "rotate"; // ドラッグ後は回転へ
+
   let shiftX = e.clientX - el.getBoundingClientRect().left;
   let shiftY = e.clientY - el.getBoundingClientRect().top;
 
@@ -92,12 +129,15 @@ function toggleAdminMode() {
     isAdmin = !isAdmin;
     document.getElementById("adminControls").style.display = isAdmin ? "block" : "none";
     alert(isAdmin ? "管理者モード ON" : "管理者モード OFF");
+    if (isAdmin) {
+      renderLayout(layoutAreaAdmin, layoutData, true);
+    }
   } else {
     alert("パスワードが違います");
   }
 }
 
-// モード切替ボタン
+// モード切替
 document.getElementById("showLayoutBtn").onclick = () => {
   document.getElementById("layoutView").style.display = "block";
   document.getElementById("layoutAdmin").style.display = "none";
@@ -121,8 +161,9 @@ document.getElementById("showLogBtn").onclick = () => {
 document.getElementById("adminToggleBtn").onclick = toggleAdminMode;
 document.getElementById("saveBtn").onclick = saveLayout;
 
+// パレットから table は除外（追加不可）
 function setupPalette() {
-  const types = ["table", "pillar", "door", "screen"];
+  const types = ["pillar", "door", "screen"];
   const palette = document.createElement("div");
   palette.style.margin = "1em 0";
 
@@ -141,6 +182,7 @@ function setupPalette() {
 
 setupPalette();
 
+// サイドバー開閉
 document.addEventListener("DOMContentLoaded", () => {
   const sidebar = document.getElementById("sidebar");
   const toggleBtn = document.getElementById("sidebarToggleBtn");
@@ -149,4 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
     sidebar.classList.toggle("sidebar-hidden");
   });
 });
+
+// 初期化
+createInitialTables();
 renderLayout(layoutArea, layoutData, false);
