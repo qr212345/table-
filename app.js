@@ -62,10 +62,17 @@ function createElement(type, x, y, rotation = 0, id = null) {
   return el;
 }
 
-async function fetchOccupiedStatus(id) {
-  // 仮実装：実際はGAS APIと連携する
-  // GAS側で座席IDとプレイヤーIDの状態に応じて occupied 判定
-  return false; // 今はすべて空席として処理
+const GAS_URL = "https://script.google.com/macros/s/AKfycbza3MwtSu_QCN_ZZKg7BnkBtUL3wTaZmtkRgymRGv-7PQnsd6piwbxmMu_uOZGfvfA/exec"; // あなたのGASのURLに置き換えてください
+
+async function fetchOccupiedStatus(seatId) {
+  try {
+    const response = await fetch(`${GAS_URL}?seatId=${encodeURIComponent(seatId)}`);
+    const data = await response.json();
+    return data.occupied === true;
+  } catch (error) {
+    console.error("座席状況の取得エラー:", error);
+    return false; // エラー時は空席として扱う
+  }
 }
 
 function dragStart(e) {
