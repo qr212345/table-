@@ -1,279 +1,530 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <title>座席レイアウト管理</title>
   <style>
+    /* 基本 */
     body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
       margin: 0;
-      font-family: sans-serif;
-      background: #f0f0f0;
-    }
-    #toolbar {
+      padding: 0;
+      overflow: hidden;
+      background-color: #f0f0f0;
+      color: #222;
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      padding: 10px;
-      background: #fff;
-      border-bottom: 1px solid #ccc;
-      position: sticky;
-      top: 0;
-      z-index: 10;
+      flex-direction: column;
+      height: 100vh;
+      transition: background-color 0.3s, color 0.3s;
     }
-    #toolbar button, #toolbar select {
-      padding: 6px 10px;
-      font-size: 14px;
+    /* ダークモード */
+    body.dark {
+      background-color: #121212;
+      color: #eee;
     }
-    #layoutArea {
-      position: relative;
-      width: 100%;
-      height: calc(100vh - 60px);
-      background: white;
-      overflow: auto;
-    }
-    .item {
-      position: absolute;
-      border: 2px solid gray;
-      background: #ddd;
-      border-radius: 8px;
-      box-sizing: border-box;
-      user-select: none;
-    }
-    .table {
-      background: lightgray;
-      width: 80px;
-      height: 80px;
-    }
-    .used {
-      background: #f55 !important;
-    }
-    .entrance {
-      width: 60px;
-      height: 10px;
+
+    /* ヘッダー */
+    #header {
+      padding: 10px 15px;
       background: #333;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
     }
-    .screen {
-      width: 120px;
-      height: 10px;
+    #header.dark {
       background: #222;
     }
-    .pillar {
-      width: 20px;
-      height: 20px;
-      background: #999;
+
+    #header > div,
+    #header select,
+    #header button,
+    #header input[type=password] {
+      font-size: 16px;
       border-radius: 4px;
+      border: none;
+      padding: 6px 12px;
+      box-sizing: border-box;
     }
-    .delete-btn {
-      position: absolute;
-      top: -8px;
-      right: -8px;
-      width: 20px;
-      height: 20px;
-      background: red;
-      color: white;
-      text-align: center;
-      font-size: 14px;
-      line-height: 20px;
-      border-radius: 50%;
+    #header select {
+      min-width: 120px;
       cursor: pointer;
-      display: none;
     }
-    .resizer {
-      width: 10px;
-      height: 10px;
-      background: #666;
+    #header button {
+      cursor: pointer;
+      background-color: #0078d7;
+      color: white;
+      transition: background-color 0.2s;
+    }
+    #header button:hover {
+      background-color: #005ea3;
+    }
+    #header input[type=password] {
+      width: 160px;
+      outline: none;
+      border: 1px solid #999;
+      color: #333;
+    }
+    body.dark #header input[type=password] {
+      background: #333;
+      color: #eee;
+      border-color: #555;
+    }
+
+    /* レイアウトエリア */
+    #layoutArea {
+      position: relative;
+      width: 100vw;
+      flex-grow: 1;
+      background-color: #fff;
+      overflow: auto;
+      padding: 10px;
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      transition: background-color 0.3s;
+      outline: none;
+    }
+    body.dark #layoutArea {
+      background-color: #222;
+    }
+
+    /* テーブル */
+    .table {
       position: absolute;
+      background-color: gray;
+      border: 2px solid black;
+      border-radius: 6px;
+      text-align: center;
+      padding: 10px;
+      box-sizing: border-box;
+      touch-action: none;
+      color: white;
+      font-weight: 600;
+      user-select: none;
+      cursor: default;
+      transition: background-color 0.3s, border-color 0.3s;
+    }
+    body.dark .table {
+      border-color: #ccc;
+      color: #eee;
+    }
+    .table.used {
+      background-color: #c0392b !important;
+      border-color: #e74c3c !important;
+    }
+    body.dark .table.used {
+      background-color: #e74c3c !important;
+      border-color: #f1948a !important;
+    }
+
+    /* リサイズハンドル */
+    .resize-handle {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      background: black;
       right: 0;
       bottom: 0;
       cursor: se-resize;
       border-radius: 2px;
+      opacity: 0.6;
+      transition: background-color 0.2s;
     }
-    .item.admin .delete-btn,
-    .item.admin .resizer {
-      display: block;
+    .resize-handle:hover {
+      background: #0078d7;
+    }
+    body.dark .resize-handle {
+      background: #eee;
+      opacity: 0.7;
+    }
+    body.dark .resize-handle:hover {
+      background: #4aa3ff;
+    }
+
+    /* 管理モード時のテーブルのカーソル */
+    .table.admin {
+      cursor: move;
+      box-shadow: 0 0 6px 2px #0078d7aa;
+      border-color: #0078d7;
+    }
+    /* フォーカススタイル */
+    .table:focus {
+      outline: 3px solid #0078d7;
+      z-index: 10;
+    }
+
+    /* 編集履歴ログ */
+    #logArea {
+      height: 120px;
+      background: #eee;
+      font-family: monospace;
+      font-size: 12px;
+      color: #111;
+      overflow-y: auto;
+      padding: 8px;
+      border-top: 1px solid #ccc;
+      user-select: text;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    body.dark #logArea {
+      background: #121212;
+      color: #eee;
+      border-color: #444;
+    }
+
+    /* スマホ対応 */
+    @media (max-width: 768px) {
+      #header {
+        font-size: 14px;
+        gap: 5px;
+      }
+      #header > div,
+      #header select,
+      #header button,
+      #header input[type=password] {
+        font-size: 14px;
+        padding: 5px 8px;
+      }
+      .table {
+        font-size: 12px;
+        padding: 6px;
+      }
+      .resize-handle {
+        width: 12px;
+        height: 12px;
+      }
     }
   </style>
 </head>
-<body>
-  <div id="toolbar">
-    <button onclick="toggleAdmin()">🔒 管理モード</button>
-    <select id="palette">
-      <option value="table">座席</option>
-      <option value="pillar">柱</option>
-      <option value="entrance">入口</option>
-      <option value="screen">スクリーン</option>
+<body class="light">
+  <div id="header" class="light" role="banner">
+    <div>
+      <button id="toggleAdminBtn" aria-pressed="false" aria-label="管理モード切替">管理モード OFF</button>
+      <input type="password" id="adminPass" placeholder="パスワード" aria-label="管理モードパスワード" autocomplete="off" />
+      <button id="addTableBtn" style="display:none;" aria-label="座席を追加">＋座席追加</button>
+    </div>
+    <select id="roomSelect" aria-label="部屋選択">
+      <option value="room1">Room 1</option>
+      <option value="room2">Room 2</option>
     </select>
-    <button onclick="addElement()">＋追加</button>
-    <button id="saveBtn" onclick="saveLayout()" disabled>💾 保存</button>
+    <button id="themeToggleBtn" aria-label="テーマ切り替え">ダークモード</button>
   </div>
-  <div id="layoutArea"></div>
+  <main id="layoutArea" tabindex="0" aria-live="polite" aria-label="座席レイアウト"></main>
+  <aside id="logArea" aria-live="polite" aria-label="編集履歴ログ" role="log"></aside>
 
   <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycby4aPVMysHgMIUhNavACRi2HCWKzt2hWhwHI6b2dU-Z5Hzw2tO-m8eyTxCIrEXpZPU/exec";
+    const ADMIN_PASSWORD = "babanuki123";
     let isAdmin = false;
-    let draggedItem = null;
+    let currentRoom = localStorage.getItem("currentRoom") || "room1";
+    let dragging = null;
+    let resizing = null;
     let offsetX = 0, offsetY = 0;
-    const layoutArea = document.getElementById("layoutArea");
-    const saveBtn = document.getElementById("saveBtn");
+    let autoSaveTimer = null;
+    let layoutData = JSON.parse(localStorage.getItem("layoutData") || "[]");
 
-    function toggleAdmin() {
-      isAdmin = !isAdmin;
-      document.querySelectorAll(".item").forEach(el => {
-        if (isAdmin) el.classList.add("admin");
-        else el.classList.remove("admin");
-      });
+    // ログ追加
+    function addLog(text) {
+      const logArea = document.getElementById("logArea");
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString();
+      logArea.textContent = `[${timeStr}] ${text}\n` + logArea.textContent;
     }
 
-    function addElement() {
-      const type = document.getElementById("palette").value;
-      const div = document.createElement("div");
-      div.className = `item ${type}`;
-      div.style.left = "20px";
-      div.style.top = "20px";
-      div.setAttribute("data-id", `item_${Date.now()}`);
+    // 管理モード切替
+    document.getElementById("toggleAdminBtn").addEventListener("click", () => {
+      const passInput = document.getElementById("adminPass");
+      if (passInput.value === ADMIN_PASSWORD) {
+        isAdmin = !isAdmin;
+        passInput.value = "";
+        document.getElementById("toggleAdminBtn").textContent = `管理モード ${isAdmin ? "ON" : "OFF"}`;
+        document.getElementById("toggleAdminBtn").setAttribute("aria-pressed", isAdmin.toString());
+        addLog(`管理モードが${isAdmin ? "ON" : "OFF"}に切り替わりました`);
+        document.getElementById("addTableBtn").style.display = isAdmin ? "inline-block" : "none";
+        renderLayout();
+      } else {
+        alert("パスワードが違います");
+      }
+    });
 
-      const del = document.createElement("div");
-      del.className = "delete-btn";
-      del.innerText = "×";
-      del.onclick = () => { div.remove(); markChanged(); };
-      div.appendChild(del);
-
-      const resizer = document.createElement("div");
-      resizer.className = "resizer";
-      div.appendChild(resizer);
-
-      addDrag(div);
-      addResize(div, resizer);
-      layoutArea.appendChild(div);
+    // 座席追加
+    document.getElementById("addTableBtn").addEventListener("click", () => {
+      const newId = `table_${Date.now()}`;
+      const newTable = {
+        id: newId,
+        tableId: newId,
+        label: `座席 ${layoutData.filter(t => t.room === currentRoom).length + 1}`,
+        x: 20,
+        y: 20,
+        width: 80,
+        height: 80,
+        room: currentRoom,
+        used: false
+      };
+      layoutData.push(newTable);
+      addLog(`新しい座席「${newTable.label}」を追加しました`);
+      renderLayout();
       markChanged();
-    }
-
-    function addDrag(el) {
-      el.addEventListener("mousedown", e => {
-        if (!isAdmin) return;
-        if (e.target.classList.contains("resizer") || e.target.classList.contains("delete-btn")) return;
-        draggedItem = el;
-        offsetX = e.offsetX;
-        offsetY = e.offsetY;
-      });
-    }
-
-    function addResize(el, handle) {
-      handle.addEventListener("mousedown", e => {
-        if (!isAdmin) return;
-        e.stopPropagation();
-        let startX = e.clientX;
-        let startY = e.clientY;
-        let startW = el.offsetWidth;
-        let startH = el.offsetHeight;
-
-        function resizeMove(ev) {
-          const newW = Math.max(20, startW + ev.clientX - startX);
-          const newH = Math.max(20, startH + ev.clientY - startY);
-          el.style.width = newW + "px";
-          el.style.height = newH + "px";
-        }
-
-        function stop() {
-          document.removeEventListener("mousemove", resizeMove);
-          document.removeEventListener("mouseup", stop);
-          markChanged();
-        }
-
-        document.addEventListener("mousemove", resizeMove);
-        document.addEventListener("mouseup", stop);
-      });
-    }
-
-    document.addEventListener("mousemove", e => {
-      if (!draggedItem) return;
-      let x = e.clientX - offsetX;
-      let y = e.clientY - offsetY;
-      // スナップ（10px単位）
-      draggedItem.style.left = Math.round(x / 10) * 10 + "px";
-      draggedItem.style.top = Math.round(y / 10) * 10 + "px";
     });
 
-    document.addEventListener("mouseup", () => {
-      if (draggedItem) markChanged();
-      draggedItem = null;
+    // 部屋切替
+    const roomSelect = document.getElementById("roomSelect");
+    roomSelect.value = currentRoom;
+    roomSelect.addEventListener("change", e => {
+      currentRoom = e.target.value;
+      localStorage.setItem("currentRoom", currentRoom);
+      addLog(`部屋が "${currentRoom}" に切り替わりました`);
+      renderLayout();
     });
 
-    function markChanged() {
-      saveBtn.disabled = false;
-    }
-
-function saveLayout() {
-  const items = Array.from(document.querySelectorAll(".item"));
-  const layout = items.map(el => ({
-    tableID: el.dataset.id,
-    x: parseInt(el.style.left),
-    y: parseInt(el.style.top),
-    playerIds: []  // 必要に応じてプレイヤー情報を含めてください
-  }));
-
-  const params = new URLSearchParams();
-  params.append("mode", "save");
-  params.append("layoutData", JSON.stringify(layout));
-  params.append("operator", "webUser");
-
-  fetch(GAS_URL + "?" + params.toString(), {
-    method: "GET",
-  })
-    .then(res => res.text())
-    .then(msg => {
-      alert("保存しました: " + msg);
-      saveBtn.disabled = true;
-    })
-    .catch(err => {
-      console.error("保存エラー:", err);
-      alert("保存に失敗しました");
+    // テーマ切替
+    const themeToggleBtn = document.getElementById("themeToggleBtn");
+    themeToggleBtn.addEventListener("click", () => {
+      const body = document.body;
+      if(body.classList.contains("light")){
+        body.classList.replace("light", "dark");
+        themeToggleBtn.textContent = "ライトモード";
+        document.getElementById("header").classList.replace("light", "dark");
+        localStorage.setItem("theme", "dark");
+        addLog("テーマをダークモードに切り替えました");
+      } else {
+        body.classList.replace("dark", "light");
+        themeToggleBtn.textContent = "ダークモード";
+        document.getElementById("header").classList.replace("dark", "light");
+        localStorage.setItem("theme", "light");
+        addLog("テーマをライトモードに切り替えました");
+      }
     });
-}
 
-async function loadLayout() {
-  try {
-    const res = await fetch(GAS_URL);  // 既にGETなのでそのままでOK
-    const json = await res.json();
-    const tables = json.tables || [];
-
-    layoutArea.innerHTML = "";  // 前の要素をクリア
-
-    for (const tbl of tables) {
+    // テーブル生成
+    function createTable(table) {
       const div = document.createElement("div");
-      div.className = `item table`;
-      div.style.left = tbl.x + "px";
-      div.style.top = tbl.y + "px";
-      div.style.width = (tbl.w || 80) + "px";
-      div.style.height = (tbl.h || 80) + "px";
-      div.dataset.id = tbl.tableID;
+      div.className = "table" + (isAdmin ? " admin" : "");
+      div.style.left = table.x + "px";
+      div.style.top = table.y + "px";
+      div.style.width = table.width + "px";
+      div.style.height = table.height + "px";
+      div.textContent = table.label || table.tableId || "Table";
+      div.dataset.id = table.id;
+      if (table.used) div.classList.add("used");
+      div.setAttribute("tabindex", "0");
+      div.setAttribute("role", "button");
+      div.setAttribute("aria-label", `${table.label || table.tableId}${table.used ? " 使用中" : " 空き"}`);
 
-      if (tbl.playerIds && tbl.playerIds.length > 0) {
-        div.classList.add("used");
+      if (isAdmin) {
+        div.addEventListener("mousedown", dragStart);
+        const resizer = document.createElement("div");
+        resizer.className = "resize-handle";
+        resizer.addEventListener("mousedown", resizeStart);
+        div.appendChild(resizer);
+        // キーボードで移動・削除操作用イベント追加
+        div.addEventListener("keydown", tableKeyDown);
       }
 
-      const del = document.createElement("div");
-      del.className = "delete-btn";
-      del.innerText = "×";
-      del.onclick = () => { div.remove(); markChanged(); };
-      div.appendChild(del);
-
-      const resizer = document.createElement("div");
-      resizer.className = "resizer";
-      div.appendChild(resizer);
-
-      layoutArea.appendChild(div);
-      addDrag(div);
-      addResize(div, resizer);
+      return div;
     }
-  } catch (err) {
-    console.error("読み込みエラー:", err);
+
+    // ドラッグ開始
+    function dragStart(e) {
+      if(!isAdmin) return;
+      if(e.target.classList.contains("resize-handle")) return;
+      dragging = e.currentTarget;
+      offsetX = e.offsetX;
+      offsetY = e.offsetY;
+      window.addEventListener("mousemove", dragMove);
+      window.addEventListener("mouseup", dragEnd);
+      e.preventDefault();
+    }
+    function dragMove(e) {
+      if (!dragging) return;
+      dragging.style.left = (e.pageX - offsetX) + "px";
+      dragging.style.top = (e.pageY - offsetY) + "px";
+      e.preventDefault();
+    }
+    function dragEnd() {
+      if (!dragging) return;
+      const id = dragging.dataset.id;
+      const table = layoutData.find(t => t.id == id);
+      if(table){
+        table.x = parseInt(dragging.style.left);
+        table.y = parseInt(dragging.style.top);
+        markChanged(`座席 ${table.label || table.tableId} を移動しました`);
+      }
+      dragging = null;
+      window.removeEventListener("mousemove", dragMove);
+      window.removeEventListener("mouseup", dragEnd);
+    }
+
+    // リサイズ開始
+    function resizeStart(e) {
+      if(!isAdmin) return;
+      resizing = e.currentTarget.parentElement;
+      offsetX = e.clientX;
+      offsetY = e.clientY;
+      window.addEventListener("mousemove", resizeMove);
+      window.addEventListener("mouseup", resizeEnd);
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    function resizeMove(e) {
+      if (!resizing) return;
+      let newW = resizing.offsetWidth + (e.clientX - offsetX);
+      let newH = resizing.offsetHeight + (e.clientY - offsetY);
+      newW = Math.max(newW, 40);
+      newH = Math.max(newH, 40);
+      resizing.style.width = newW + "px";
+      resizing.style.height = newH + "px";
+      offsetX = e.clientX;
+      offsetY = e.clientY;
+      e.preventDefault();
+    }
+    function resizeEnd() {
+      if (!resizing) return;
+      const id = resizing.dataset.id;
+      const table = layoutData.find(t => t.id == id);
+      if(table){
+        table.width = parseInt(resizing.style.width);
+        table.height = parseInt(resizing.style.height);
+        markChanged(`座席 ${table.label || table.tableId} をリサイズしました`);
+      }
+      resizing = null;
+      window.removeEventListener("mousemove", resizeMove);
+      window.removeEventListener("mouseup", resizeEnd);
+    }
+
+    // キーボード操作で移動・削除
+// キーボード操作で移動・削除
+function tableKeyDown(e) {
+  // 管理モードでなければ何もしない
+  if (!isAdmin) return;
+
+  const div = e.currentTarget;
+  const step = 10;
+  let left = parseInt(div.style.left);
+  let top = parseInt(div.style.top);
+  let changed = false;
+
+  switch (e.key) {
+    case "ArrowLeft":
+      div.style.left = Math.max(0, left - step) + "px";
+      changed = true;
+      break;
+    case "ArrowRight":
+      div.style.left = left + step + "px";
+      changed = true;
+      break;
+    case "ArrowUp":
+      div.style.top = Math.max(0, top - step) + "px";
+      changed = true;
+      break;
+    case "ArrowDown":
+      div.style.top = top + step + "px";
+      changed = true;
+      break;
+    case "Delete":
+    case "Backspace":
+      if (confirm(`座席「${div.textContent}」を削除しますか？`)) {
+        const id = div.dataset.id;
+        layoutData = layoutData.filter(t => t.id !== id);
+        addLog(`座席「${div.textContent}」を削除しました`);
+        renderLayout();
+        markChanged();
+      }
+      break;
+  }
+
+  if (changed) {
+    const id = div.dataset.id;
+    const table = layoutData.find(t => t.id == id);
+    if (table) {
+      table.x = parseInt(div.style.left);
+      table.y = parseInt(div.style.top);
+      markChanged(`座席 ${table.label || table.tableId} をキーボードで移動しました`);
+    }
+    e.preventDefault();
   }
 }
 
 
-    loadLayout();
+    // レイアウトレンダリング
+    function renderLayout() {
+      const area = document.getElementById("layoutArea");
+      area.innerHTML = "";
+      layoutData.filter(t => t.room === currentRoom).forEach(table => {
+        area.appendChild(createTable(table));
+      });
+    }
+
+    // 変更マーク＆自動保存
+    function markChanged(logText) {
+      addLog(logText || "変更がありました");
+      if(autoSaveTimer) clearTimeout(autoSaveTimer);
+      autoSaveTimer = setTimeout(() => {
+        saveLayout();
+        addLog("自動保存されました");
+      }, 1000);
+    }
+
+    // 保存
+    function saveLayout() {
+      localStorage.setItem("layoutData", JSON.stringify(layoutData));
+    }
+
+    // 外部データを反映してusageを更新する（GAS連携想定）
+    function updateTableUsage(usedTables) {
+      let updated = false;
+      layoutData.forEach(table => {
+        const shouldBeUsed = usedTables.includes(table.tableId || table.id);
+        if(table.used !== shouldBeUsed){
+          table.used = shouldBeUsed;
+          updated = true;
+        }
+      });
+      if(updated){
+        renderLayout();
+        addLog("使用状況を更新しました");
+      }
+    }
+
+    // 外部GASデータ読み込み（例）
+    function loadExternalUsageData() {
+      fetch("https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec")
+        .then(res => res.json())
+        .then(data => {
+          const usedTableIds = Object.keys(data.tables || {}); // 例: { table1: {...}, table2: {...} }
+          updateTableUsage(usedTableIds);
+        })
+        .catch(() => addLog("外部データの読み込みに失敗しました"));
+    }
+
+    // 初期化
+    window.addEventListener("load", () => {
+      document.getElementById("roomSelect").value = currentRoom;
+      renderLayout();
+      loadExternalUsageData();
+
+      // テーマ保存復元
+      const savedTheme = localStorage.getItem("theme") || "light";
+      if(savedTheme === "dark"){
+        document.body.classList.replace("light", "dark");
+        themeToggleBtn.textContent = "ライトモード";
+        document.getElementById("header").classList.replace("light", "dark");
+      } else {
+        document.body.classList.replace("dark", "light");
+        themeToggleBtn.textContent = "ダークモード";
+        document.getElementById("header").classList.replace("dark", "light");
+      }
+    });
+
+    // ページ離脱前に保存
+    window.addEventListener("beforeunload", () => {
+      saveLayout();
+    });
   </script>
 </body>
 </html>
