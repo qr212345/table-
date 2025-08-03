@@ -2,155 +2,156 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>座席レイアウト管理</title>
-  <link rel="stylesheet" href="style.css" />
   <style>
-    .table-box {
-      width: 50px;
-      height: 50px;
-      line-height: 50px;
-      text-align: center;
-      border-radius: 6px;
-      color: white;
-      position: absolute;
-      user-select: none;
-      cursor: default;
-      background: gray;
-      transition: background-color 0.3s ease;
-    }
-    .table-box.occupied {
-      background: red;
-    }
-    .table-box.draggable {
-      cursor: move;
-      box-shadow: 0 0 6px rgba(0,0,0,0.5);
-    }
-    #layoutArea, #layoutAreaAdmin {
-      position: relative;
-      width: 600px;
-      height: 400px;
-      border: 1px solid #ccc;
-      background: #fafafa;
-      margin-bottom: 1em;
-    }
-    .toolbox {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-    .tool-item {
-      width: 50px;
-      height: 50px;
-      background: #ddd;
-      border: 1px solid #999;
-      text-align: center;
-      line-height: 50px;
-      user-select: none;
-      cursor: grab;
-    }
-    .sidebar-hidden {
-      transform: translateX(-100%);
-      transition: transform 0.3s ease;
-    }
-    #sidebar {
-      transition: transform 0.3s ease;
-    }
-
-    #canvas {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-.draggable {
-  position: absolute;
-  cursor: move;
-}
-
-.seat {
-  width: 60px;
-  height: 40px;
-  background: gray;
-  border-radius: 4px;
-  text-align: center;
-  line-height: 40px;
-}
-
-.pillar {
-  width: 40px;
-  height: 40px;
-  background: #777;
-  border-radius: 6px;
-}
-
-.screen {
-  width: 200px;
-  height: 10px;
-  background: #222;
-}
-
+    body { margin: 0; font-family: sans-serif; }
+    #layoutArea, #palette { position: relative; width: 100%; height: 100vh; overflow: hidden; }
+    .element { position: absolute; cursor: move; border-radius: 6px; user-select: none; }
+    .seat { width: 60px; height: 60px; background-color: gray; }
+    .used { background-color: red !important; }
+    .pillar { width: 40px; height: 40px; background-color: #555; border-radius: 50%; }
+    .screen { width: 200px; height: 10px; background-color: black; }
+    .entrance { width: 60px; height: 20px; background-color: #888; border: 2px dashed white; }
+    #palette { background: #f2f2f2; padding: 10px; display: flex; gap: 10px; border-bottom: 2px solid #ccc; }
+    .palette-item { width: 60px; height: 60px; background-color: #ccc; text-align: center; line-height: 60px; cursor: grab; border: 1px solid #999; border-radius: 6px; }
+    #saveBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .rotate-btn, .delete-btn, .resize-handle { position: absolute; width: 20px; height: 20px; background: #fff; border: 1px solid #333; border-radius: 50%; cursor: pointer; font-size: 14px; text-align: center; line-height: 20px; }
+    .rotate-btn { top: -10px; right: -10px; }
+    .delete-btn { bottom: -10px; right: -10px; }
+    .resize-handle { bottom: -10px; left: -10px; cursor: se-resize; }
   </style>
 </head>
 <body>
-  <button id="sidebarToggleBtn" class="sidebar-toggle">≡</button>
-
-  <div id="sidebar" style="position:fixed; top:0; left:0; bottom:0; width:250px; background:#eee; padding:1em; overflow-y:auto;">
-    <h2>メニュー</h2>
-    <button id="showLayoutBtn">座席表示画面</button><br /><br />
-    <button id="showAdminBtn">管理者モード画面</button><br /><br />
-    <button id="showLogBtn">ログ表示</button>
-    <hr />
-
-    <div id="adminPanel" style="margin-top:1em;">
-      <input type="password" id="adminPass" placeholder="管理者パスワード" />
-      <button id="adminToggleBtn">管理者モード切替</button>
-    </div>
-
-    <div id="adminControls" style="display:none; margin-top:1em;">
-      <select id="roomSelector">
-        <option value="roomA">部屋A</option>
-        <option value="roomB">部屋B</option>
-        <option value="roomC">部屋C</option>
-      </select><br/><br/>
-      <div class="toolbox">
-        <div class="tool-item" data-type="seat">座席</div>
-        <div class="tool-item" data-type="pillar">柱</div>
-        <div class="tool-item" data-type="entrance">入口</div>
-        <div class="tool-item" data-type="screen">スクリーン</div>
-      </div>
-      <button id="saveBtn">配置を保存</button>
-    </div>
+  <div id="palette">
+    <div class="palette-item" data-type="seat">座席</div>
+    <div class="palette-item" data-type="pillar">柱</div>
+    <div class="palette-item" data-type="screen">スクリーン</div>
+    <div class="palette-item" data-type="entrance">入口</div>
+    <button id="saveBtn" disabled>💾 保存</button>
   </div>
+  <div id="layoutArea"></div>
 
-  <main style="margin-left:260px; padding:1em;">
-    <section id="layoutView" style="display:block;">
-      <h2>座席表示画面</h2>
-      <div id="layoutArea" class="layout-area"></div>
-    <div id="canvas">
-      <div class="seat draggable" id="table1">1</div>
-      <div class="seat draggable" id="table2">2</div>
-      <div class="seat draggable" id="table3">3</div>
-      <div class="seat draggable" id="table4">4</div>
-      <div class="seat draggable" id="table5">5</div>
-      <div class="seat draggable" id="table6">6</div>
-      <div class="seat draggable" id="table7">7</div>
-      <div class="pillar draggable"></div>
-      <div class="screen draggable"></div>
-    </div>  
-    </section>
+  <script>
+    const layoutArea = document.getElementById("layoutArea");
+    const saveBtn = document.getElementById("saveBtn");
+    const paletteItems = document.querySelectorAll(".palette-item");
+    const GRID_SIZE = 20;
+    let layoutData = JSON.parse(localStorage.getItem("layoutData")) || [];
+    let isDragging = false, offsetX = 0, offsetY = 0;
+    let dragTarget = null;
 
-    <section id="layoutAdmin" style="display:none;">
-      <h2>管理者モード：座席レイアウト編集</h2>
-      <div id="layoutAreaAdmin"></div>
-    </section>
+    function createElement(type, x = 50, y = 50, w = null, h = null, rot = 0) {
+      const el = document.createElement("div");
+      el.classList.add("element", type);
+      el.dataset.type = type;
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
+      if (w) el.style.width = `${w}px`;
+      if (h) el.style.height = `${h}px`;
+      if (rot) el.style.transform = `rotate(${rot}deg)`;
+      el.appendChild(createButton("🔄", "rotate-btn", () => rotateElement(el)));
+      el.appendChild(createButton("🗑️", "delete-btn", () => deleteElement(el)));
+      el.appendChild(createHandle(el));
+      layoutArea.appendChild(el);
+      enableDrag(el);
+    }
 
-    <section id="logArea" style="display:none; max-height: 300px; overflow-y:auto; background:#222; color:#eee; padding:0.5em; border-radius:6px;">
-      <h2>ログ表示エリア</h2>
-      <div id="logContent"><p>ログはここに表示されます。</p></div>
-    </section>
-  </main>
+    function createButton(text, className, action) {
+      const btn = document.createElement("div");
+      btn.className = className;
+      btn.innerText = text;
+      btn.onclick = (e) => { e.stopPropagation(); action(); markChanged(); };
+      return btn;
+    }
 
-  <script src="app.js" type="module"></script>
+    function createHandle(el) {
+      const handle = document.createElement("div");
+      handle.className = "resize-handle";
+      handle.addEventListener("mousedown", (e) => {
+        e.stopPropagation();
+        let startX = e.clientX, startY = e.clientY;
+        let startW = el.offsetWidth, startH = el.offsetHeight;
+
+        function resizeMove(ev) {
+          const newW = Math.max(20, Math.round((startW + ev.clientX - startX) / GRID_SIZE) * GRID_SIZE);
+          const newH = Math.max(20, Math.round((startH + ev.clientY - startY) / GRID_SIZE) * GRID_SIZE);
+          el.style.width = `${newW}px`;
+          el.style.height = `${newH}px`;
+        }
+        function resizeEnd() {
+          document.removeEventListener("mousemove", resizeMove);
+          document.removeEventListener("mouseup", resizeEnd);
+          markChanged();
+        }
+        document.addEventListener("mousemove", resizeMove);
+        document.addEventListener("mouseup", resizeEnd);
+      });
+      return handle;
+    }
+
+    function enableDrag(el) {
+      el.onmousedown = (e) => {
+        if (e.target.classList.contains("rotate-btn") || e.target.classList.contains("delete-btn") || e.target.classList.contains("resize-handle")) return;
+        isDragging = true;
+        dragTarget = el;
+        offsetX = e.offsetX;
+        offsetY = e.offsetY;
+      };
+    }
+
+    document.onmousemove = (e) => {
+      if (!isDragging || !dragTarget) return;
+      const x = Math.round((e.clientX - offsetX) / GRID_SIZE) * GRID_SIZE;
+      const y = Math.round((e.clientY - offsetY) / GRID_SIZE) * GRID_SIZE;
+      dragTarget.style.left = `${x}px`;
+      dragTarget.style.top = `${y}px`;
+    };
+
+    document.onmouseup = () => {
+      if (isDragging) markChanged();
+      isDragging = false;
+      dragTarget = null;
+    };
+
+    function rotateElement(el) {
+      const current = el.style.transform.match(/rotate\((\d+)deg\)/);
+      const angle = current ? parseInt(current[1]) : 0;
+      el.style.transform = `rotate(${(angle + 90) % 360}deg)`;
+    }
+
+    function deleteElement(el) {
+      el.remove();
+    }
+
+    paletteItems.forEach(item => {
+      item.ondragstart = () => false;
+      item.onmousedown = (e) => {
+        const type = item.dataset.type;
+        createElement(type);
+        markChanged();
+      };
+    });
+
+    function markChanged() {
+      saveBtn.disabled = false;
+    }
+
+    saveBtn.onclick = () => {
+      const elements = document.querySelectorAll(".element");
+      layoutData = Array.from(elements).map(el => ({
+        type: el.dataset.type,
+        x: parseInt(el.style.left),
+        y: parseInt(el.style.top),
+        w: el.offsetWidth,
+        h: el.offsetHeight,
+        rot: el.style.transform.match(/rotate\((\d+)deg\)/)?.[1] || 0
+      }));
+      localStorage.setItem("layoutData", JSON.stringify(layoutData));
+      saveBtn.disabled = true;
+    };
+
+    layoutData.forEach(d => createElement(d.type, d.x, d.y, d.w, d.h, d.rot));
+  </script>
 </body>
 </html>
