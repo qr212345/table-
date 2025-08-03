@@ -1,157 +1,279 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>座席レイアウト管理</title>
   <style>
-    body { margin: 0; font-family: sans-serif; }
-    #layoutArea, #palette { position: relative; width: 100%; height: 100vh; overflow: hidden; }
-    .element { position: absolute; cursor: move; border-radius: 6px; user-select: none; }
-    .seat { width: 60px; height: 60px; background-color: gray; }
-    .used { background-color: red !important; }
-    .pillar { width: 40px; height: 40px; background-color: #555; border-radius: 50%; }
-    .screen { width: 200px; height: 10px; background-color: black; }
-    .entrance { width: 60px; height: 20px; background-color: #888; border: 2px dashed white; }
-    #palette { background: #f2f2f2; padding: 10px; display: flex; gap: 10px; border-bottom: 2px solid #ccc; }
-    .palette-item { width: 60px; height: 60px; background-color: #ccc; text-align: center; line-height: 60px; cursor: grab; border: 1px solid #999; border-radius: 6px; }
-    #saveBtn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .rotate-btn, .delete-btn, .resize-handle { position: absolute; width: 20px; height: 20px; background: #fff; border: 1px solid #333; border-radius: 50%; cursor: pointer; font-size: 14px; text-align: center; line-height: 20px; }
-    .rotate-btn { top: -10px; right: -10px; }
-    .delete-btn { bottom: -10px; right: -10px; }
-    .resize-handle { bottom: -10px; left: -10px; cursor: se-resize; }
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #f0f0f0;
+    }
+    #toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px;
+      background: #fff;
+      border-bottom: 1px solid #ccc;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    #toolbar button, #toolbar select {
+      padding: 6px 10px;
+      font-size: 14px;
+    }
+    #layoutArea {
+      position: relative;
+      width: 100%;
+      height: calc(100vh - 60px);
+      background: white;
+      overflow: auto;
+    }
+    .item {
+      position: absolute;
+      border: 2px solid gray;
+      background: #ddd;
+      border-radius: 8px;
+      box-sizing: border-box;
+      user-select: none;
+    }
+    .table {
+      background: lightgray;
+      width: 80px;
+      height: 80px;
+    }
+    .used {
+      background: #f55 !important;
+    }
+    .entrance {
+      width: 60px;
+      height: 10px;
+      background: #333;
+    }
+    .screen {
+      width: 120px;
+      height: 10px;
+      background: #222;
+    }
+    .pillar {
+      width: 20px;
+      height: 20px;
+      background: #999;
+      border-radius: 4px;
+    }
+    .delete-btn {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      width: 20px;
+      height: 20px;
+      background: red;
+      color: white;
+      text-align: center;
+      font-size: 14px;
+      line-height: 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+    }
+    .resizer {
+      width: 10px;
+      height: 10px;
+      background: #666;
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      cursor: se-resize;
+      border-radius: 2px;
+    }
+    .item.admin .delete-btn,
+    .item.admin .resizer {
+      display: block;
+    }
   </style>
 </head>
 <body>
-  <div id="palette">
-    <div class="palette-item" data-type="seat">座席</div>
-    <div class="palette-item" data-type="pillar">柱</div>
-    <div class="palette-item" data-type="screen">スクリーン</div>
-    <div class="palette-item" data-type="entrance">入口</div>
-    <button id="saveBtn" disabled>💾 保存</button>
+  <div id="toolbar">
+    <button onclick="toggleAdmin()">🔒 管理モード</button>
+    <select id="palette">
+      <option value="table">座席</option>
+      <option value="pillar">柱</option>
+      <option value="entrance">入口</option>
+      <option value="screen">スクリーン</option>
+    </select>
+    <button onclick="addElement()">＋追加</button>
+    <button id="saveBtn" onclick="saveLayout()" disabled>💾 保存</button>
   </div>
   <div id="layoutArea"></div>
 
   <script>
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbza3MwtSu_QCN_ZZKg7BnkBtUL3wTaZmtkRgymRGv-7PQnsd6piwbxmMu_uOZGfvfA/exec";
+    let isAdmin = false;
+    let draggedItem = null;
+    let offsetX = 0, offsetY = 0;
     const layoutArea = document.getElementById("layoutArea");
     const saveBtn = document.getElementById("saveBtn");
-    const paletteItems = document.querySelectorAll(".palette-item");
-    const GRID_SIZE = 20;
-    let layoutData = JSON.parse(localStorage.getItem("layoutData")) || [];
-    let isDragging = false, offsetX = 0, offsetY = 0;
-    let dragTarget = null;
 
-    function createElement(type, x = 50, y = 50, w = null, h = null, rot = 0) {
-      const el = document.createElement("div");
-      el.classList.add("element", type);
-      el.dataset.type = type;
-      el.style.left = `${x}px`;
-      el.style.top = `${y}px`;
-      if (w) el.style.width = `${w}px`;
-      if (h) el.style.height = `${h}px`;
-      if (rot) el.style.transform = `rotate(${rot}deg)`;
-      el.appendChild(createButton("🔄", "rotate-btn", () => rotateElement(el)));
-      el.appendChild(createButton("🗑️", "delete-btn", () => deleteElement(el)));
-      el.appendChild(createHandle(el));
-      layoutArea.appendChild(el);
-      enableDrag(el);
-    }
-
-    function createButton(text, className, action) {
-      const btn = document.createElement("div");
-      btn.className = className;
-      btn.innerText = text;
-      btn.onclick = (e) => { e.stopPropagation(); action(); markChanged(); };
-      return btn;
-    }
-
-    function createHandle(el) {
-      const handle = document.createElement("div");
-      handle.className = "resize-handle";
-      handle.addEventListener("mousedown", (e) => {
-        e.stopPropagation();
-        let startX = e.clientX, startY = e.clientY;
-        let startW = el.offsetWidth, startH = el.offsetHeight;
-
-        function resizeMove(ev) {
-          const newW = Math.max(20, Math.round((startW + ev.clientX - startX) / GRID_SIZE) * GRID_SIZE);
-          const newH = Math.max(20, Math.round((startH + ev.clientY - startY) / GRID_SIZE) * GRID_SIZE);
-          el.style.width = `${newW}px`;
-          el.style.height = `${newH}px`;
-        }
-        function resizeEnd() {
-          document.removeEventListener("mousemove", resizeMove);
-          document.removeEventListener("mouseup", resizeEnd);
-          markChanged();
-        }
-        document.addEventListener("mousemove", resizeMove);
-        document.addEventListener("mouseup", resizeEnd);
+    function toggleAdmin() {
+      isAdmin = !isAdmin;
+      document.querySelectorAll(".item").forEach(el => {
+        if (isAdmin) el.classList.add("admin");
+        else el.classList.remove("admin");
       });
-      return handle;
     }
 
-    function enableDrag(el) {
-      el.onmousedown = (e) => {
-        if (e.target.classList.contains("rotate-btn") || e.target.classList.contains("delete-btn") || e.target.classList.contains("resize-handle")) return;
-        isDragging = true;
-        dragTarget = el;
+    function addElement() {
+      const type = document.getElementById("palette").value;
+      const div = document.createElement("div");
+      div.className = `item ${type}`;
+      div.style.left = "20px";
+      div.style.top = "20px";
+      div.setAttribute("data-id", `item_${Date.now()}`);
+
+      const del = document.createElement("div");
+      del.className = "delete-btn";
+      del.innerText = "×";
+      del.onclick = () => { div.remove(); markChanged(); };
+      div.appendChild(del);
+
+      const resizer = document.createElement("div");
+      resizer.className = "resizer";
+      div.appendChild(resizer);
+
+      addDrag(div);
+      addResize(div, resizer);
+      layoutArea.appendChild(div);
+      markChanged();
+    }
+
+    function addDrag(el) {
+      el.addEventListener("mousedown", e => {
+        if (!isAdmin) return;
+        if (e.target.classList.contains("resizer") || e.target.classList.contains("delete-btn")) return;
+        draggedItem = el;
         offsetX = e.offsetX;
         offsetY = e.offsetY;
-      };
+      });
     }
 
-    document.onmousemove = (e) => {
-      if (!isDragging || !dragTarget) return;
-      const x = Math.round((e.clientX - offsetX) / GRID_SIZE) * GRID_SIZE;
-      const y = Math.round((e.clientY - offsetY) / GRID_SIZE) * GRID_SIZE;
-      dragTarget.style.left = `${x}px`;
-      dragTarget.style.top = `${y}px`;
-    };
+    function addResize(el, handle) {
+      handle.addEventListener("mousedown", e => {
+        if (!isAdmin) return;
+        e.stopPropagation();
+        let startX = e.clientX;
+        let startY = e.clientY;
+        let startW = el.offsetWidth;
+        let startH = el.offsetHeight;
 
-    document.onmouseup = () => {
-      if (isDragging) markChanged();
-      isDragging = false;
-      dragTarget = null;
-    };
+        function resizeMove(ev) {
+          const newW = Math.max(20, startW + ev.clientX - startX);
+          const newH = Math.max(20, startH + ev.clientY - startY);
+          el.style.width = newW + "px";
+          el.style.height = newH + "px";
+        }
 
-    function rotateElement(el) {
-      const current = el.style.transform.match(/rotate\((\d+)deg\)/);
-      const angle = current ? parseInt(current[1]) : 0;
-      el.style.transform = `rotate(${(angle + 90) % 360}deg)`;
+        function stop() {
+          document.removeEventListener("mousemove", resizeMove);
+          document.removeEventListener("mouseup", stop);
+          markChanged();
+        }
+
+        document.addEventListener("mousemove", resizeMove);
+        document.addEventListener("mouseup", stop);
+      });
     }
 
-    function deleteElement(el) {
-      el.remove();
-    }
+    document.addEventListener("mousemove", e => {
+      if (!draggedItem) return;
+      let x = e.clientX - offsetX;
+      let y = e.clientY - offsetY;
+      // スナップ（10px単位）
+      draggedItem.style.left = Math.round(x / 10) * 10 + "px";
+      draggedItem.style.top = Math.round(y / 10) * 10 + "px";
+    });
 
-    paletteItems.forEach(item => {
-      item.ondragstart = () => false;
-      item.onmousedown = (e) => {
-        const type = item.dataset.type;
-        createElement(type);
-        markChanged();
-      };
+    document.addEventListener("mouseup", () => {
+      if (draggedItem) markChanged();
+      draggedItem = null;
     });
 
     function markChanged() {
       saveBtn.disabled = false;
     }
 
-    saveBtn.onclick = () => {
-      const elements = document.querySelectorAll(".element");
-      layoutData = Array.from(elements).map(el => ({
-        type: el.dataset.type,
-        x: parseInt(el.style.left),
-        y: parseInt(el.style.top),
-        w: el.offsetWidth,
-        h: el.offsetHeight,
-        rot: el.style.transform.match(/rotate\((\d+)deg\)/)?.[1] || 0
-      }));
-      localStorage.setItem("layoutData", JSON.stringify(layoutData));
-      saveBtn.disabled = true;
-    };
+function saveLayout() {
+  const items = Array.from(document.querySelectorAll(".item"));
+  const layout = items.map(el => ({
+    tableID: el.dataset.id,
+    x: parseInt(el.style.left),
+    y: parseInt(el.style.top),
+    playerIds: []  // 必要に応じてプレイヤー情報を含めてください
+  }));
 
-    layoutData.forEach(d => createElement(d.type, d.x, d.y, d.w, d.h, d.rot));
+  const params = new URLSearchParams();
+  params.append("mode", "save");
+  params.append("layoutData", JSON.stringify(layout));
+  params.append("operator", "webUser");
+
+  fetch(GAS_URL + "?" + params.toString(), {
+    method: "GET",
+  })
+    .then(res => res.text())
+    .then(msg => {
+      alert("保存しました: " + msg);
+      saveBtn.disabled = true;
+    })
+    .catch(err => {
+      console.error("保存エラー:", err);
+      alert("保存に失敗しました");
+    });
+}
+
+async function loadLayout() {
+  try {
+    const res = await fetch(GAS_URL);  // 既にGETなのでそのままでOK
+    const json = await res.json();
+    const tables = json.tables || [];
+
+    layoutArea.innerHTML = "";  // 前の要素をクリア
+
+    for (const tbl of tables) {
+      const div = document.createElement("div");
+      div.className = `item table`;
+      div.style.left = tbl.x + "px";
+      div.style.top = tbl.y + "px";
+      div.style.width = (tbl.w || 80) + "px";
+      div.style.height = (tbl.h || 80) + "px";
+      div.dataset.id = tbl.tableID;
+
+      if (tbl.playerIds && tbl.playerIds.length > 0) {
+        div.classList.add("used");
+      }
+
+      const del = document.createElement("div");
+      del.className = "delete-btn";
+      del.innerText = "×";
+      del.onclick = () => { div.remove(); markChanged(); };
+      div.appendChild(del);
+
+      const resizer = document.createElement("div");
+      resizer.className = "resizer";
+      div.appendChild(resizer);
+
+      layoutArea.appendChild(div);
+      addDrag(div);
+      addResize(div, resizer);
+    }
+  } catch (err) {
+    console.error("読み込みエラー:", err);
+  }
+}
+
+
+    loadLayout();
   </script>
 </body>
 </html>
