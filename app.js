@@ -140,4 +140,13 @@ function setupPalette() {
 }
 
 setupPalette();
+
+document.addEventListener("DOMContentLoaded", () => {
+  const sidebar = document.getElementById("sidebar");
+  const toggleBtn = document.getElementById("sidebarToggleBtn");
+
+  toggleBtn.addEventListener("click", () => {
+    sidebar.classList.toggle("sidebar-hidden");
+  });
+});
 renderLayout(layoutArea, layoutData, false);
