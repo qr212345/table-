@@ -160,23 +160,25 @@
     }
 
     /* 編集履歴ログ */
-    #logArea {
-      height: 120px;
-      background: #eee;
-      font-family: monospace;
-      font-size: 12px;
-      color: #111;
-      overflow-y: auto;
-      padding: 8px;
-      border-top: 1px solid #ccc;
-      user-select: text;
-      transition: background-color 0.3s, color 0.3s;
-    }
-    body.dark #logArea {
-      background: #121212;
-      color: #eee;
-      border-color: #444;
-    }
+#logArea {
+  height: 120px;
+  background: #eee;
+  font-family: monospace;
+  font-size: 12px;
+  color: #111;
+  overflow-y: auto;
+  padding: 8px;
+  border-top: 1px solid #ccc;
+  user-select: text;
+  transition: background-color 0.3s, color 0.3s;
+  display: none; /* ← 追加：初期は非表示 */
+}
+body.dark #logArea {
+  background: #121212;
+  color: #eee;
+  border-color: #444;
+}
+
 
     /* スマホ対応 */
     @media (max-width: 768px) {
@@ -246,6 +248,9 @@
         document.getElementById("toggleAdminBtn").setAttribute("aria-pressed", isAdmin.toString());
         addLog(`管理モードが${isAdmin ? "ON" : "OFF"}に切り替わりました`);
         document.getElementById("addTableBtn").style.display = isAdmin ? "inline-block" : "none";
+        
+        document.getElementById("logArea").style.display = isAdmin ? "block" : "none";
+        
         renderLayout();
       } else {
         alert("パスワードが違います");
@@ -302,32 +307,62 @@
     });
 
     // テーブル生成
-    function createTable(table) {
-      const div = document.createElement("div");
-      div.className = "table" + (isAdmin ? " admin" : "");
-      div.style.left = table.x + "px";
-      div.style.top = table.y + "px";
-      div.style.width = table.width + "px";
-      div.style.height = table.height + "px";
-      div.textContent = table.label || table.tableId || "Table";
-      div.dataset.id = table.id;
-      if (table.used) div.classList.add("used");
-      div.setAttribute("tabindex", "0");
-      div.setAttribute("role", "button");
-      div.setAttribute("aria-label", `${table.label || table.tableId}${table.used ? " 使用中" : " 空き"}`);
+function createTable(table) {
+  const div = document.createElement("div");
+  div.className = "table" + (isAdmin ? " admin" : "");
+  div.style.left = table.x + "px";
+  div.style.top = table.y + "px";
+  div.style.width = table.width + "px";
+  div.style.height = table.height + "px";
+  div.textContent = table.label || table.tableId || "Table";
+  div.dataset.id = table.id;
+  if (table.used) div.classList.add("used");
+  div.setAttribute("tabindex", "0");
+  div.setAttribute("role", "button");
+  div.setAttribute("aria-label", `${table.label || table.tableId}${table.used ? " 使用中" : " 空き"}`);
 
-      if (isAdmin) {
-        div.addEventListener("mousedown", dragStart);
-        const resizer = document.createElement("div");
-        resizer.className = "resize-handle";
-        resizer.addEventListener("mousedown", resizeStart);
-        div.appendChild(resizer);
-        // キーボードで移動・削除操作用イベント追加
-        div.addEventListener("keydown", tableKeyDown);
+  if (isAdmin) {
+    div.addEventListener("mousedown", dragStart);
+    const resizer = document.createElement("div");
+    resizer.className = "resize-handle";
+    resizer.addEventListener("mousedown", resizeStart);
+    div.appendChild(resizer);
+    
+    // キーボードで移動・削除操作用イベント追加
+    div.addEventListener("keydown", tableKeyDown);
+    
+    // マウス削除ボタン追加
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "✖";
+    delBtn.setAttribute("aria-label", "座席を削除");
+    delBtn.style.position = "absolute";
+    delBtn.style.top = "2px";
+    delBtn.style.right = "2px";
+    delBtn.style.background = "rgba(255, 0, 0, 0.8)";
+    delBtn.style.color = "white";
+    delBtn.style.border = "none";
+    delBtn.style.borderRadius = "50%";
+    delBtn.style.width = "20px";
+    delBtn.style.height = "20px";
+    delBtn.style.cursor = "pointer";
+    delBtn.style.fontWeight = "bold";
+    delBtn.style.lineHeight = "18px";
+    delBtn.style.padding = "0";
+    delBtn.addEventListener("click", (e) => {
+      e.stopPropagation(); // ドラッグと衝突しないように
+      if (confirm(`座席「${table.label}」を削除しますか？`)) {
+        layoutData = layoutData.filter(t => t.id !== table.id);
+        addLog(`座席「${table.label}」を削除しました`);
+        renderLayout();
+        markChanged();
       }
+    });
+    div.appendChild(delBtn);
+  }
 
-      return div;
-    }
+  return div;
+}
+
 
     // ドラッグ開始
     function dragStart(e) {
