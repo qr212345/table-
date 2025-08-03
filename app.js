@@ -1,5 +1,6 @@
 const ADMIN_PASSWORD = "babanuki123";
 let isAdmin = false;
+let offsetX = 0, offsetY = 0;
 
 const layoutArea = document.getElementById("layoutArea");
 const layoutAreaAdmin = document.getElementById("layoutAreaAdmin");
@@ -76,32 +77,32 @@ async function fetchOccupiedStatus(seatId) {
 }
 
 function dragStart(e) {
-  if (!isAdmin) return;
-  const el = e.currentTarget;
-
-  el.dataset.mode = "rotate"; // ドラッグ後は回転へ
-
-  let shiftX = e.clientX - el.getBoundingClientRect().left;
-  let shiftY = e.clientY - el.getBoundingClientRect().top;
-
-  function moveAt(pageX, pageY) {
-    el.style.left = pageX - shiftX + "px";
-    el.style.top = pageY - shiftY + "px";
-    el.dataset.x = parseInt(pageX - shiftX);
-    el.dataset.y = parseInt(pageY - shiftY);
-  }
-
-  function onMouseMove(e) {
-    moveAt(e.pageX, e.pageY);
-  }
-
-  document.addEventListener("mousemove", onMouseMove);
-
-  el.onmouseup = () => {
-    document.removeEventListener("mousemove", onMouseMove);
-    el.onmouseup = null;
-  };
+  dragged = e.target;
+  const rect = dragged.getBoundingClientRect();
+  offsetX = e.clientX - rect.left;
+  offsetY = e.clientY - rect.top;
+  document.addEventListener("mousemove", dragMove);
+  document.addEventListener("mouseup", dragEnd);
 }
+
+function dragMove(e) {
+  if (!dragged) return;
+  const canvas = document.getElementById("canvas");
+  const canvasRect = canvas.getBoundingClientRect();
+  dragged.style.position = "absolute";
+  dragged.style.left = `${e.clientX - canvasRect.left - offsetX}px`;
+  dragged.style.top = `${e.clientY - canvasRect.top - offsetY}px`;
+}
+
+function dragEnd() {
+  document.removeEventListener("mousemove", dragMove);
+  document.removeEventListener("mouseup", dragEnd);
+  dragged = null;
+}
+
+document.querySelectorAll("#canvas .draggable").forEach(elem => {
+  elem.addEventListener("mousedown", dragStart);
+});
 
 function renderLayout(area, data, editable = false) {
   area.innerHTML = "";
