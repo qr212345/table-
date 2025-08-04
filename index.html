@@ -545,6 +545,8 @@ function tableKeyDown(e) {
       renderLayout();
       loadExternalUsageData();
 
+      setInterval(loadExternalUsageData, 10000); // 10秒ごとにGASからデータ取得
+
       // テーマ保存復元
       const savedTheme = localStorage.getItem("theme") || "light";
       if(savedTheme === "dark"){
