@@ -528,7 +528,7 @@ function tableKeyDown(e) {
 
     // 外部GASデータ読み込み（例）
     function loadExternalUsageData() {
-  fetch("https://script.google.com/macros/s/AKfycby4aPVMysHgMIUhNavACRi2HCWKzt2hWhwHI6b2dU-Z5Hzw2tO-m8eyTxCIrEXpZPU/exec")
+  fetch("https://script.google.com/macros/s/AKfycbzPUOz4eCsZ7RVm4Yf_VPu1OC5nn2yIOPa5U-tT7ZMHpw0FRNsHaqovbX7vSaEHjPc/exec")
     .then(res => res.json())
     .then(data => {
       const usedTableIds = Object.keys(data.tables || {}); // 例: { table1: {...}, table2: {...} }
