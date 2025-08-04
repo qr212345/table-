@@ -528,14 +528,16 @@ function tableKeyDown(e) {
 
     // 外部GASデータ読み込み（例）
     function loadExternalUsageData() {
-      fetch("https://script.google.com/macros/s/AKfycby4aPVMysHgMIUhNavACRi2HCWKzt2hWhwHI6b2dU-Z5Hzw2tO-m8eyTxCIrEXpZPU/exec")
-        .then(res => res.json())
-        .then(data => {
-          const usedTableIds = Object.keys(data.tables || {}); // 例: { table1: {...}, table2: {...} }
-          updateTableUsage(usedTableIds);
-        })
-        .catch(() => addLog("外部データの読み込みに失敗しました"));
-    }
+  fetch("https://script.google.com/macros/s/AKfycby4aPVMysHgMIUhNavACRi2HCWKzt2hWhwHI6b2dU-Z5Hzw2tO-m8eyTxCIrEXpZPU/exec")
+    .then(res => res.json())
+    .then(data => {
+      const usedTableIds = Object.keys(data.tables || {}); // 例: { table1: {...}, table2: {...} }
+      updateTableUsage(usedTableIds);
+      addLog("✅ 外部データの読み込みに成功しました"); // ← 成功メッセージ
+    })
+    .catch(() => addLog("❌ 外部データの読み込みに失敗しました"));
+}
+
 
     // 初期化
     window.addEventListener("load", () => {
