@@ -222,6 +222,7 @@ body.dark #logArea {
 
   <script>
     const ADMIN_PASSWORD = "babanuki123";
+    const SYNC_ENDPOINT = "https://script.google.com/macros/s/AKfycbx2UQyu8B0l4n_fBO5pZWOs93-i83DiAEmp6skGtUa2uhWrq8vL-yhz34FgcgqscJQ/exec"
     let isAdmin = false;
     let currentRoom = localStorage.getItem("currentRoom") || "room1";
     let dragging = null;
@@ -507,8 +508,20 @@ function tableKeyDown(e) {
 
     // 保存
     function saveLayout() {
-      localStorage.setItem("layoutData", JSON.stringify(layoutData));
-    }
+    localStorage.setItem("layoutData", JSON.stringify(layoutData)); // ← ローカルにも保存
+
+    fetch(SYNC_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(layoutData)
+    })
+    .then(res => res.text())
+    .then(msg => addLog("🌐 同期サーバーに保存しました: " + msg))
+    .catch(err => {
+      console.error(err);
+      addLog("❌ 同期保存に失敗しました");
+    });
+  }
 
     // 外部データを反映してusageを更新する（GAS連携想定）
     function updateTableUsage(usedTables) {
@@ -546,6 +559,23 @@ function tableKeyDown(e) {
       loadExternalUsageData();
 
       setInterval(loadExternalUsageData, 10000); // 10秒ごとにGASからデータ取得
+     // 一定間隔で同期サーバーから最新データを取得し、自動で更新
+      setInterval(() => {
+        fetch(SYNC_ENDPOINT)
+        .then(res => res.json())
+        .then(data => {
+      // 現在の layoutData と比較し、違いがあれば更新
+       if (JSON.stringify(data) !== JSON.stringify(layoutData)) {
+        layoutData = data;
+        renderLayout();
+        addLog("🔄 同期サーバーから最新の座席レイアウトを反映しました");
+       }
+      })
+        .catch(err => {
+        console.error(err);
+        addLog("❌ 同期チェックに失敗しました");
+      });
+      }, 10000); // ← 10秒ごとに同期チェック（必要なら時間変更OK）
 
       // テーマ保存復元
       const savedTheme = localStorage.getItem("theme") || "light";
