@@ -222,7 +222,7 @@ body.dark #logArea {
 
   <script>
     const ADMIN_PASSWORD = "babanuki123";
-    const SYNC_ENDPOINT = "https://script.google.com/macros/s/AKfycbx2UQyu8B0l4n_fBO5pZWOs93-i83DiAEmp6skGtUa2uhWrq8vL-yhz34FgcgqscJQ/exec"
+    const SYNC_ENDPOINT = "https://script.google.com/macros/s/AKfycbzdn68UJbzKkXZiUJex2fDhGDJp8eniFab-K9MN6zYkBxEPwASUPzTDYlHVVFmk4DA/exec";
     let isAdmin = false;
     let currentRoom = localStorage.getItem("currentRoom") || "room1";
     let dragging = null;
@@ -508,20 +508,21 @@ function tableKeyDown(e) {
 
     // 保存
     function saveLayout() {
-    localStorage.setItem("layoutData", JSON.stringify(layoutData)); // ← ローカルにも保存
+      localStorage.setItem("layoutData", JSON.stringify(layoutData)); // ローカルにも保存
 
-    fetch(SYNC_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(layoutData)
-    })
-    .then(res => res.text())
-    .then(msg => addLog("🌐 同期サーバーに保存しました: " + msg))
-    .catch(err => {
-      console.error(err);
-      addLog("❌ 同期保存に失敗しました");
-    });
-  }
+      fetch(SYNC_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },  // ← ここをapplication/jsonからtext/plainへ変更
+        body: JSON.stringify(layoutData)
+      })
+      .then(res => res.text())
+      .then(msg => addLog("🌐 同期サーバーに保存しました: " + msg))
+      .catch(err => {
+        console.error(err);
+        addLog("❌ 同期保存に失敗しました");
+      });
+    }
+
 
     // 外部データを反映してusageを更新する（GAS連携想定）
     function updateTableUsage(usedTables) {
