@@ -508,7 +508,6 @@ function tableKeyDown(e) {
 
     // 保存
     function saveLayout() {
-      localStorage.setItem("layoutData", JSON.stringify(layoutData)); // ローカルにも保存
 
       fetch(SYNC_ENDPOINT, {
         method: "POST",
