@@ -210,6 +210,7 @@ body.dark #logArea {
       <button id="toggleAdminBtn" aria-pressed="false" aria-label="管理モード切替">管理モード OFF</button>
       <input type="password" id="adminPass" placeholder="パスワード" aria-label="管理モードパスワード" autocomplete="off" />
       <button id="addTableBtn" style="display:none;" aria-label="座席を追加">＋座席追加</button>
+      <button id="manualSaveBtn" style="display:none;" aria-label="保存">💾 座席配置を保存</button>
     </div>
     <select id="roomSelect" aria-label="部屋選択">
       <option value="room1">Room 1</option>
@@ -241,22 +242,26 @@ body.dark #logArea {
 
     // 管理モード切替
     document.getElementById("toggleAdminBtn").addEventListener("click", () => {
-      const passInput = document.getElementById("adminPass");
-      if (passInput.value === ADMIN_PASSWORD) {
-        isAdmin = !isAdmin;
-        passInput.value = "";
-        document.getElementById("toggleAdminBtn").textContent = `管理モード ${isAdmin ? "ON" : "OFF"}`;
-        document.getElementById("toggleAdminBtn").setAttribute("aria-pressed", isAdmin.toString());
-        addLog(`管理モードが${isAdmin ? "ON" : "OFF"}に切り替わりました`);
-        document.getElementById("addTableBtn").style.display = isAdmin ? "inline-block" : "none";
-        
-        document.getElementById("logArea").style.display = isAdmin ? "block" : "none";
-        
-        renderLayout();
-      } else {
-        alert("パスワードが違います");
-      }
-    });
+  const passInput = document.getElementById("adminPass");
+  if (passInput.value === ADMIN_PASSWORD) {
+    isAdmin = !isAdmin;
+    passInput.value = "";
+    document.getElementById("toggleAdminBtn").textContent = `管理モード ${isAdmin ? "ON" : "OFF"}`;
+    document.getElementById("toggleAdminBtn").setAttribute("aria-pressed", isAdmin.toString());
+    addLog(`管理モードが${isAdmin ? "ON" : "OFF"}に切り替わりました`);
+    document.getElementById("addTableBtn").style.display = isAdmin ? "inline-block" : "none";
+    document.getElementById("manualSaveBtn").style.display = isAdmin ? "inline-block" : "none"; // ← 追加
+    document.getElementById("manualSaveBtn").addEventListener("click", () => {
+　　  saveLayout();
+  　　addLog("💾 手動保存が実行されました");
+　　});
+    document.getElementById("logArea").style.display = isAdmin ? "block" : "none";
+    renderLayout();
+  } else {
+    alert("パスワードが違います");
+  }
+});
+
 
     // 座席追加
     document.getElementById("addTableBtn").addEventListener("click", () => {
@@ -499,11 +504,6 @@ function tableKeyDown(e) {
     // 変更マーク＆自動保存
     function markChanged(logText) {
       addLog(logText || "変更がありました");
-      if(autoSaveTimer) clearTimeout(autoSaveTimer);
-      autoSaveTimer = setTimeout(() => {
-        saveLayout();
-        addLog("自動保存されました");
-      }, 1000);
     }
 
     // 保存
@@ -540,15 +540,33 @@ function tableKeyDown(e) {
     }
 
     // 外部GASデータ読み込み（例）
-    function loadExternalUsageData() {
+function loadExternalUsageData() {
+  if (isAdmin) return;
   fetch("https://script.google.com/macros/s/AKfycbzPUOz4eCsZ7RVm4Yf_VPu1OC5nn2yIOPa5U-tT7ZMHpw0FRNsHaqovbX7vSaEHjPc/exec")
     .then(res => res.json())
     .then(data => {
-      const usedTableIds = Object.keys(data.tables || {}); // 例: { table1: {...}, table2: {...} }
+      const usedTableIds = Object.keys(data.tables || {});
       updateTableUsage(usedTableIds);
-      addLog("✅ 外部データの読み込みに成功しました"); // ← 成功メッセージ
+      addLog("✅ 外部データの読み込みに成功しました");
     })
     .catch(() => addLog("❌ 外部データの読み込みに失敗しました"));
+}
+
+function syncWithServer() {
+  if (isAdmin) return;
+  fetch(SYNC_ENDPOINT)
+    .then(res => res.json())
+    .then(data => {
+      if (JSON.stringify(data) !== JSON.stringify(layoutData)) {
+        layoutData = data;
+        renderLayout();
+        addLog("🔄 同期サーバーから最新の座席レイアウトを反映しました");
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      addLog("❌ 同期チェックに失敗しました");
+    });
 }
 
     function loadInitialLayoutFromServer() {
