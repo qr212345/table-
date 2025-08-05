@@ -229,7 +229,7 @@ body.dark #logArea {
     let resizing = null;
     let offsetX = 0, offsetY = 0;
     let autoSaveTimer = null;
-    let layoutData = JSON.parse(localStorage.getItem("layoutData") || "[]");
+    let layoutData =  [];
 
     // ログ追加
     function addLog(text) {
@@ -552,44 +552,64 @@ function tableKeyDown(e) {
     .catch(() => addLog("❌ 外部データの読み込みに失敗しました"));
 }
 
+    function loadInitialLayoutFromServer() {
+  fetch(SYNC_ENDPOINT)
+    .then(res => res.json())
+    .then(data => {
+      layoutData = data;
+      renderLayout();
+      addLog("✅ 初期レイアウトをサーバーから読み込みました");
+    })
+    .catch(err => {
+      console.error(err);
+      addLog("❌ 初期レイアウトの読み込みに失敗しました（サーバー）");
+    });
+}
+
 
     // 初期化
-    window.addEventListener("load", () => {
-      document.getElementById("roomSelect").value = currentRoom;
-      renderLayout();
-      loadExternalUsageData();
+window.addEventListener("load", () => {
+  document.getElementById("roomSelect").value = currentRoom;
+  
+  // GASから初期レイアウトを読み込み
+  loadInitialLayoutFromServer();
 
-      setInterval(loadExternalUsageData, 10000); // 10秒ごとにGASからデータ取得
-     // 一定間隔で同期サーバーから最新データを取得し、自動で更新
-      setInterval(() => {
-        fetch(SYNC_ENDPOINT)
-        .then(res => res.json())
-        .then(data => {
-      // 現在の layoutData と比較し、違いがあれば更新
-       if (JSON.stringify(data) !== JSON.stringify(layoutData)) {
-        layoutData = data;
-        renderLayout();
-        addLog("🔄 同期サーバーから最新の座席レイアウトを反映しました");
-       }
+  // 使用状況の読み込み（used状態）
+  loadExternalUsageData();
+
+  // 10秒ごとにusedデータ取得
+  setInterval(loadExternalUsageData, 10000);
+
+  // 10秒ごとにレイアウトの同期確認（レイアウトが違えば更新）
+  setInterval(() => {
+    fetch(SYNC_ENDPOINT)
+      .then(res => res.json())
+      .then(data => {
+        if (JSON.stringify(data) !== JSON.stringify(layoutData)) {
+          layoutData = data;
+          renderLayout();
+          addLog("🔄 同期サーバーから最新の座席レイアウトを反映しました");
+        }
       })
-        .catch(err => {
+      .catch(err => {
         console.error(err);
         addLog("❌ 同期チェックに失敗しました");
       });
-      }, 10000); // ← 10秒ごとに同期チェック（必要なら時間変更OK）
+  }, 10000);
 
-      // テーマ保存復元
-      const savedTheme = localStorage.getItem("theme") || "light";
-      if(savedTheme === "dark"){
-        document.body.classList.replace("light", "dark");
-        themeToggleBtn.textContent = "ライトモード";
-        document.getElementById("header").classList.replace("light", "dark");
-      } else {
-        document.body.classList.replace("dark", "light");
-        themeToggleBtn.textContent = "ダークモード";
-        document.getElementById("header").classList.replace("dark", "light");
-      }
-    });
+  // テーマ保存復元
+  const savedTheme = localStorage.getItem("theme") || "light";
+  if(savedTheme === "dark"){
+    document.body.classList.replace("light", "dark");
+    themeToggleBtn.textContent = "ライトモード";
+    document.getElementById("header").classList.replace("light", "dark");
+  } else {
+    document.body.classList.replace("dark", "light");
+    themeToggleBtn.textContent = "ダークモード";
+    document.getElementById("header").classList.replace("dark", "light");
+  }
+});
+
 
     // ページ離脱前に保存
     window.addEventListener("beforeunload", () => {
